@@ -1,22 +1,34 @@
-# KSU Schedule Planner — web app
+# KSU Schedule Planner
 
 A website (that also installs like an app on phones) where Kennesaw State students pick their major, mark what they've finished, and get a year of courses plus conflict-free schedules built from real KSU sections.
 
 ```
 ksu-planner/
-├── app/                 the server (Python)
-│   ├── main.py          web server: serves the site, class data, and AI features
-│   ├── refresh.py       downloads fresh KSU sections (automatically, once a day)
-│   ├── ksu.py           talks to KSU's class search
-│   ├── build_data.py    converts sections into the planner's format
-│   └── config.py        settings (read from .env or environment variables)
-├── static/              the website students see
-│   ├── index.html       the planner
-│   ├── manifest.webmanifest, sw.js, icons/   make it installable on phones and work offline
-├── data/planner-data.json   class data (starts with your Spring 2027 download)
-├── tools/ksu_sections.py    the original download script, kept for reference
-├── requirements.txt, render.yaml, .env.example
+├── app/                      the server (Python, Flask)
+│   ├── main.py               serves the site, class data, and AI features
+│   ├── refresh.py            downloads fresh KSU sections (automatically, once a day)
+│   ├── ksu.py                talks to KSU's class search
+│   ├── build_data.py         converts sections into the planner's format
+│   └── config.py             settings (from .env or environment variables)
+├── static/                   the website students see
+│   ├── index.html            page layout
+│   ├── css/planner.css       styles (light and dark)
+│   ├── js/engine.js          the scheduler
+│   ├── js/requirements.js    each major's requirements  ← update every catalog year
+│   ├── js/planner.js         everything on screen
+│   ├── js/theme.js           light / dark switch
+│   └── manifest.webmanifest, sw.js, icons/   install on phones, work offline
+├── data/planner-data.json    class data (starts with your Spring 2027 download)
+├── tests/                    automated tests (GitHub runs them on every push)
+├── docs/                     how it works, how to update requirements
+├── tools/ksu_sections.py     the original stand-alone download script
+├── .github/workflows/        the GitHub test setup
+└── requirements.txt, requirements-dev.txt, render.yaml, .env.example
 ```
+
+More detail: [how it works](docs/how-it-works.md) · [updating requirements](docs/updating-requirements.md)
+
+> Unofficial student project, not affiliated with Kennesaw State University. Always confirm requirements in DegreeWorks and sections in Owl Express.
 
 ---
 
@@ -48,14 +60,29 @@ You already have Python, so this takes about five minutes.
 
 ## Part 2 · Put the code on GitHub
 
-Hosting services deploy from GitHub, and it keeps a history of your changes.
+Hosting services deploy from GitHub, and it keeps a history of every change.
 
-1. Make a free account at [github.com](https://github.com).
-2. Install [GitHub Desktop](https://desktop.github.com) (easiest on Windows).
-3. In GitHub Desktop: **File → Add local repository →** pick your `ksu-planner` folder → it offers to **create a repository** → do that.
-4. Click **Publish repository**. Keep **"Keep this code private"** checked.
+**Before you upload, check:**
+- Your `.env` file (with the API key) is **not** going up. It's listed in `.gitignore`, so GitHub Desktop won't show it. If you ever see `.env` in the list of changed files, stop and don't commit.
+- You don't need `data/sections.json`; it's ignored too. `data/planner-data.json` *does* go up, so the site has data the moment it starts.
 
-Your `.env` file (with the API key) is listed in `.gitignore`, so it never gets uploaded. Never paste your key anywhere else.
+**Upload with GitHub Desktop (easiest on Windows):**
+1. Make a free account at [github.com](https://github.com) and install [GitHub Desktop](https://desktop.github.com). Sign in.
+2. **File → Add local repository →** choose your `ksu-planner` folder. It says it isn't a repository yet; click **create a repository**, keep the name `ksu-planner`, leave the other options alone, and click **Create repository**.
+3. Look at the **Changes** list on the left: you should see `app/`, `static/`, `README.md` and so on, and no `.env`.
+4. Bottom left, type a summary like `First version of KSU Schedule Planner` and click **Commit to main**.
+5. Click **Publish repository**. Leave **Keep this code private** checked, then **Publish**.
+
+**After any change later:** open GitHub Desktop, write a short summary of what you changed, **Commit to main**, then **Push origin**.
+
+**Check the tests:** on github.com, open your repository → **Actions** tab. A green check means all tests passed on GitHub's computers. A red X shows which test failed.
+
+**Running the tests on your laptop (optional):**
+```
+py -m pip install -r requirements-dev.txt
+py -m pytest
+```
+(The scheduler tests need Node.js: `node --test tests/engine.test.mjs`. GitHub runs both for you, so this is optional.)
 
 ---
 
@@ -104,7 +131,7 @@ Ask Claude to set up the Capacitor project when you're ready.
 ## Before you share it with other students
 
 - **Ask KSU.** The server downloads public class-search data once a day, slowly (`KSU_DELAY`). Before launching publicly, ask the Registrar or UITS whether that's OK, or whether they offer an official data feed.
-- **Keep the disclaimer.** The page says it's unofficial and that DegreeWorks and the catalog win. Major requirements in `static/index.html` (search for `MAJORS=`) were entered by hand from the 2025–26 curriculum sheets; update them each catalog year.
+- **Keep the disclaimer.** The page says it's unofficial and that DegreeWorks and the catalog win. Major requirements in `static/js/requirements.js` were entered by hand from the 2025–26 curriculum sheets; update them each catalog year ([how](docs/updating-requirements.md)).
 - **Control AI costs.** Each visitor gets `AI_PER_HOUR` AI requests per hour (default 20). Also set a spend limit in the Anthropic Console.
 - **Rate My Professors:** the planner links to their search rather than copying ratings, which keeps you clear of their terms.
 
