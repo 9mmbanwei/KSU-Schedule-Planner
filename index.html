@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Plan your Kennesaw State classes: pick courses from your major's requirements and build conflict-free schedules from real KSU sections.">
+<meta name="theme-color" content="#EAA712">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="KSU Planner">
+<title>KSU Schedule Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: two-panel planner. Left = student inputs (pathway, week grid, preferences). Right = ranked schedules on a week calendar. Black-and-gold registrar look. */
+:root{
+  --bg:#F3F3EF; --surface:#FFFFFF; --ink:#17160F; --muted:#66635A; --line:#DCDAD1;
+  --gold:#EAA712; --gold-ink:#7E5600; --gold-soft:#FBF0D2;
+  --good:#2E7D4F; --warn:#B4541A; --bad:#B3261E; --busy:#2A2925;
+  --c1:#C58A00; --c2:#2F6FB0; --c3:#2E8A5C; --c4:#B2433A; --c5:#7A4FB5; --c6:#1E8C93;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12120F; --surface:#1C1B17; --ink:#EEEBE1; --muted:#9D998C; --line:#33312A;
+  --gold:#F2B52E; --gold-ink:#F4C55A; --gold-soft:#2E2613;
+  --good:#5DBB84; --warn:#E59158; --bad:#EE7A72; --busy:#D9D5C8;
+  --c1:#E8B33A; --c2:#6AA6E6; --c3:#5CC08E; --c4:#E57E74; --c5:#AE8BE8; --c6:#4FC3C9;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12120F; --surface:#1C1B17; --ink:#EEEBE1; --muted:#9D998C; --line:#33312A;
+  --gold:#F2B52E; --gold-ink:#F4C55A; --gold-soft:#2E2613;
+  --good:#5DBB84; --warn:#E59158; --bad:#EE7A72; --busy:#D9D5C8;
+  --c1:#E8B33A; --c2:#6AA6E6; --c3:#5CC08E; --c4:#E57E74; --c5:#AE8BE8; --c6:#4FC3C9;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5}
+.wrap{max-width:1280px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;border-bottom:3px solid var(--gold);padding-bottom:14px;margin-bottom:18px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,5vw,44px);line-height:1;margin:0;letter-spacing:.01em;text-transform:uppercase}
+h1 span{color:var(--gold-ink)}
+.sub{color:var(--muted);margin:6px 0 0;max-width:62ch}
+.badge{font-family:var(--mono);font-size:11px;letter-spacing:.04em;border:1px solid var(--line);padding:5px 9px;border-radius:3px;color:var(--muted);background:var(--surface);display:flex;flex-direction:column;gap:1px}
+.badge b{color:var(--ink);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.grid{display:grid;grid-template-columns:minmax(0,410px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:920px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+h2{font-family:var(--display);font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.03em;margin:0;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+h2 small{font-family:var(--body);font-weight:400;font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500}
+select,textarea,input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:8px;min-width:0}
+textarea{resize:vertical;min-height:72px}
+button{font:inherit;cursor:pointer;border-radius:4px}
+.btn{background:var(--gold);color:#17160F;border:1px solid var(--gold);padding:8px 14px;font-weight:600}
+.btn:hover{filter:brightness(1.05)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line);font-weight:500}
+.btn:disabled{opacity:.5;cursor:default}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ai{background:var(--gold-soft);border-color:color-mix(in srgb,var(--gold) 45%,var(--line))}
+.status{font-size:12px;color:var(--muted);min-height:1.2em}
+.term h3{font-family:var(--mono);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:8px 0 4px}
+.crow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.crow .code{font-family:var(--mono);font-weight:500;font-size:13px}
+.crow .name{color:var(--muted);font-size:12px;display:block;line-height:1.3}
+.crow .lock{color:var(--warn);font-size:11px;display:block}
+.tog{border:1px solid var(--line);background:transparent;color:var(--muted);padding:3px 9px;font-size:12px;border-radius:999px;white-space:nowrap}
+.tog[aria-pressed="true"].done{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.tog[aria-pressed="true"].take{background:var(--gold);color:#17160F;border-color:var(--gold);font-weight:600}
+.tog[aria-pressed="true"].pref{background:var(--good);color:var(--surface);border-color:var(--good)}
+.tog[aria-pressed="true"].avoid{background:var(--bad);color:var(--surface);border-color:var(--bad)}
+.tog:disabled{opacity:.35;cursor:not-allowed}
+.credits{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.credits b{color:var(--ink)}
+.extra{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
+.extra .row input{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:2px 4px 2px 10px;font-size:12px;background:var(--bg)}
+.chip b{font-family:var(--mono);font-weight:500}
+.chip button{border:0;background:transparent;color:var(--muted);padding:0 6px;font-size:14px;line-height:1}
+.avail{display:grid;grid-template-columns:40px repeat(5,minmax(0,1fr));gap:2px;user-select:none;touch-action:none}
+.avail .hd{font-family:var(--mono);font-size:11px;text-align:center;color:var(--muted)}
+.avail .hr{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:right;padding-right:4px;line-height:18px}
+.cell{height:18px;border:0;border-radius:2px;background:color-mix(in srgb,var(--good) 16%,var(--surface));padding:0}
+.cell.busy{background:repeating-linear-gradient(135deg,var(--busy) 0 3px,color-mix(in srgb,var(--busy) 70%,transparent) 3px 6px)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:5px}
+.prefs{display:flex;flex-direction:column;gap:10px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:13px}
+.chk input{margin-top:3px;accent-color:var(--gold)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 12px;display:flex;flex-direction:column;align-items:flex-start;min-width:96px}
+.tab b{font-family:var(--display);font-size:17px;text-transform:uppercase;letter-spacing:.03em}
+.tab span{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.tab[aria-selected="true"]{border-color:var(--gold);box-shadow:inset 0 -3px 0 var(--gold)}
+.summary{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--bg)}
+.pill.good{border-color:color-mix(in srgb,var(--good) 50%,var(--line));color:var(--good)}
+.pill.warn{border-color:color-mix(in srgb,var(--warn) 50%,var(--line));color:var(--warn)}
+.calwrap{overflow-x:auto}
+.cal{display:grid;grid-template-columns:44px repeat(5,minmax(104px,1fr));min-width:580px}
+.cal .dh{font-family:var(--display);font-weight:600;font-size:15px;text-transform:uppercase;text-align:center;padding:4px 0;border-bottom:1px solid var(--line)}
+.cal .tcol{position:relative}
+.cal .tcol div{position:absolute;right:6px;font-family:var(--mono);font-size:10px;color:var(--muted);transform:translateY(-6px)}
+.cal .day{position:relative;border-left:1px solid var(--line);background-image:repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px 48px)}
+.cal .bz{position:absolute;left:0;right:0;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--busy) 18%,transparent) 0 4px,transparent 4px 8px)}
+.blk{position:absolute;left:3px;right:3px;border-radius:3px;border-left:4px solid var(--cc);background:color-mix(in srgb,var(--cc) 18%,var(--surface));padding:2px 6px;overflow:hidden;font-size:11px;line-height:1.25}
+.blk b{font-family:var(--mono);font-size:11px;display:block}
+.blk span{color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk.half{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--cc) 22%,var(--surface)) 0 6px,color-mix(in srgb,var(--cc) 10%,var(--surface)) 6px 12px)}
+.online{font-size:12px;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:680px}
+th{font-family:var(--mono);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top;font-variant-numeric:tabular-nums}
+td.mono{font-family:var(--mono)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--cc);margin-right:6px}
+.m{display:block;font-size:12px}
+.m i{font-style:normal;color:var(--muted)}
+.prof{display:flex;flex-direction:column;gap:3px}
+.prof a{color:var(--ink);text-decoration-color:var(--gold);text-underline-offset:2px}
+.prof .row{gap:4px}
+.small{font-size:12px;color:var(--muted)}
+.seats0{color:var(--warn);font-weight:500}
+.why{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.crns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.crns input{font-family:var(--mono);font-size:13px;border:1px dashed var(--line);background:var(--bg);color:var(--ink);padding:6px 8px;border-radius:4px;flex:1;min-width:0}
+.empty{border:1px dashed var(--line);border-radius:6px;padding:16px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+.empty b{color:var(--ink)}
+.empty ul{margin:0;padding-left:18px}
+.advice{white-space:pre-wrap;font-size:13.5px;max-width:72ch}
+.note{font-size:12px;color:var(--muted);max-width:80ch;margin:0}
+.engine{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.plist{display:flex;flex-direction:column;gap:4px;font-size:12px}
+details.rg{border-top:1px solid var(--line)}
+details.rg summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;font-family:var(--mono);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+details.rg summary::-webkit-details-marker{display:none}
+details.rg summary::before{content:"▸";margin-right:6px;transition:transform .15s}
+details.rg[open] summary::before{transform:rotate(90deg)}
+details.rg summary span:first-child{flex:1}
+.meter{width:72px;height:6px;border-radius:3px;background:var(--line);overflow:hidden;flex:none}
+.meter i{display:block;height:100%;background:var(--gold)}
+.slot{display:flex;flex-direction:column;gap:6px;padding:8px 0;border-top:1px solid var(--line)}
+.slot .head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.slot .head b{font-size:13px;font-weight:600}
+.slot select{flex:1;min-width:0;padding:6px}
+.st{font-size:11px;display:block}
+.st.ok{color:var(--good)}.st.lock{color:var(--warn)}.st.na{color:var(--muted)}
+.build{display:flex;flex-direction:column;gap:8px;border:1px solid color-mix(in srgb,var(--gold) 45%,var(--line));background:var(--gold-soft);border-radius:6px;padding:12px}
+.build ol,.build ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:3px;font-size:13px}
+.build .skip{font-size:12px;color:var(--muted)}
+.cmd{display:flex;gap:8px;align-items:flex-start}
+.cmd code{flex:1;min-width:0;font-family:var(--mono);font-size:11.5px;background:var(--bg);border:1px dashed var(--line);border-radius:4px;padding:8px;overflow-wrap:anywhere}
+.warnbox{border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:8px;font-size:13px}
+.reg{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:6px;padding:14px}
+.reg h3{font-family:var(--display);font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.reg .steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:13px;max-width:75ch}
+table.bk{min-width:520px}
+.build code{font-family:var(--mono);font-size:11.5px}
+.hdr-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+@media (max-width:600px){.hdr-right{align-items:flex-start}}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:var(--surface);padding:2px;gap:2px}
+.seg button{border:0;background:transparent;color:var(--muted);font-size:12px;font-weight:500;padding:4px 12px;border-radius:999px}
+.seg button[aria-checked="true"]{background:var(--ink);color:var(--surface)}
+.seg button:hover:not([aria-checked="true"]){color:var(--ink)}
+.tag{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:1px 5px;margin-left:4px}
+body{margin:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+img{max-width:100%}
+.loading{max-width:600px;margin:20vh auto;padding:0 16px;text-align:center;color:var(--muted);font-family:var(--body)}
+.loading b{display:block;font-family:var(--display);font-size:28px;text-transform:uppercase;color:var(--ink);margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="loading" id="loading"><b>KSU Schedule Planner</b><span id="loadingMsg">Loading class data…</span></div>
+<div class="wrap" id="app" hidden>
+  <header class="top">
+    <div>
+      <h1>KSU Schedule <span>Planner</span></h1>
+      <p class="sub">Choose your major and mark what you've finished. The planner picks your next term's courses from your requirements, then builds conflict-free schedules from real KSU sections around the hours you're free.</p>
+    </div>
+    <div class="hdr-right">
+      <div class="seg" role="radiogroup" aria-label="Theme">
+        <button type="button" role="radio" data-theme-pick="system" aria-checked="true">System</button>
+        <button type="button" role="radio" data-theme-pick="light" aria-checked="false">Light</button>
+        <button type="button" role="radio" data-theme-pick="dark" aria-checked="false">Dark</button>
+      </div>
+      <div class="badge" id="dataBadge"></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <section class="panel ai" id="aiPanel">
+        <h2>Describe your week <small>AI fills in the form</small></h2>
+        <textarea id="aiText" placeholder="e.g. I'm a software engineering major, I've finished CSE 1321, ENGL 1101 and Calc I. I work Tue/Thu mornings and want 15 hours. What should I take?"></textarea>
+        <div class="row">
+          <button class="btn" id="aiGo">Set up from this</button>
+          <span class="status" id="aiStatus"></span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Your major</h2>
+        <label class="f" for="major">Major
+          <select id="major"></select></label>
+        <p class="small" id="majorSource" style="margin:0"></p>
+        <div class="row" style="align-items:flex-end">
+          <label class="f" for="target">Credit hours per semester
+            <select id="target"><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option></select></label>
+          <button class="btn" id="buildBtn">Plan my next year</button>
+        </div>
+        <div class="row" style="align-items:center">
+          <label class="chk" for="pSummer"><input type="checkbox" id="pSummer"> Include a summer semester</label>
+          <label class="f" for="summerTarget" style="flex-direction:row;align-items:center;gap:6px">Summer hours
+            <select id="summerTarget"><option>3</option><option>4</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>12</option></select></label>
+        </div>
+        <div id="buildOut"></div>
+        <div class="credits" id="credits"></div>
+        <div class="extra">
+          <label class="f" for="courseSearch">Add any other course offered this term
+            <span class="row"><input type="text" id="courseSearch" list="courseList" placeholder="Type a code or title, e.g. MATH 2202"><button class="btn ghost" id="courseAdd">Add</button></span>
+          </label>
+          <datalist id="courseList"></datalist>
+          <div class="chips" id="extraChips"></div>
+          <span class="status" id="courseStatus"></span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Requirements <small id="reqProgress"></small></h2>
+        <div id="dataGap"></div>
+        <div id="reqs"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Availability <small>tap or drag to block hours</small></h2>
+        <div class="legend"><span><i style="background:color-mix(in srgb,var(--good) 16%,var(--surface))"></i>Free</span><span><i style="background:var(--busy)"></i>Busy (work, commute, etc.)</span></div>
+        <div class="avail" id="avail"></div>
+        <div class="row"><button class="btn ghost" id="clearBusy">Clear all</button></div>
+      </section>
+
+      <section class="panel">
+        <h2>Preferences</h2>
+        <div class="prefs">
+          <div class="two">
+            <label class="f" for="pFormat">Format
+              <select id="pFormat">
+                <option value="any">Any</option><option value="prefer-in">Prefer in person</option><option value="prefer-online">Prefer online</option>
+                <option value="in">In person only</option><option value="online">Online only</option>
+              </select></label>
+            <label class="f" for="pCampus">Campus
+              <select id="pCampus"><option value="any">Either campus</option><option value="K">Kennesaw only</option><option value="M">Marietta only</option></select></label>
+          </div>
+          <label class="chk"><input type="checkbox" id="pEarly"> No classes starting before 9:00 a.m.</label>
+          <label class="chk"><input type="checkbox" id="pLate"> No classes ending after 6:00 p.m.</label>
+          <label class="chk"><input type="checkbox" id="pCompact"> Fewer days on campus, even with longer days</label>
+          <label class="chk"><input type="checkbox" id="pFull"> Include full sections (waitlist)</label>
+          <div class="plist" id="profList"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel" id="results"></section>
+      <section class="panel" id="advisorPanel">
+        <h2>Advisor notes <small>AI comparison of the top options</small></h2>
+        <div class="row">
+          <button class="btn" id="advGo">Compare these options</button>
+          <button class="btn ghost" id="advStop" hidden>Stop</button>
+          <span class="status" id="advStatus"></span>
+        </div>
+        <div class="advice" id="advOut"></div>
+      </section>
+      <p class="note"><b>About the data.</b> Sections, times, rooms, instructors and seat counts come from KSU's class search at the time shown above, and seats change constantly during registration. Major requirements come from KSU's 2025–26 curriculum sheets (Computer Science, Software Engineering, Information Technology) and the 2025 Architecture curriculum chart, entered by hand: prerequisites are simplified, rules like "at least one course from List 1" aren't enforced, and the official catalog and DegreeWorks always win. Mark courses Done to match your DegreeWorks audit. Professor names link to a Rate My Professors search; use Prefer and Avoid to steer the schedules. This is an unofficial student tool, not affiliated with Kennesaw State University. Always confirm in Owl Express before you register.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // theme: "system" follows the device; "light"/"dark" pin it. Remembered in this browser only.
+  var KEY="ksu-planner-theme",root=document.documentElement;
+  function apply(v){if(v==="light"||v==="dark")root.setAttribute("data-theme",v);else root.removeAttribute("data-theme");
+    document.querySelectorAll("[data-theme-pick]").forEach(function(b){b.setAttribute("aria-checked",String(b.getAttribute("data-theme-pick")===(v||"system")))})}
+  var saved=null;try{saved=localStorage.getItem(KEY)}catch(e){}
+  if(saved&&saved!=="system")apply(saved);
+  document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest("[data-theme-pick]");if(!b)return;var v=b.getAttribute("data-theme-pick");apply(v);try{localStorage.setItem(KEY,v)}catch(e){}});
+  document.addEventListener("keydown",function(e){var b=e.target.closest&&e.target.closest("[data-theme-pick]");if(!b||(e.key!=="ArrowRight"&&e.key!=="ArrowLeft"))return;var all=[].slice.call(document.querySelectorAll("[data-theme-pick]")),i=all.indexOf(b),n=all[(i+(e.key==="ArrowRight"?1:all.length-1))%all.length];n.focus();n.click()});
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){apply(saved||"system")});else apply(saved||"system");
+})();
+</script>
+<script>
+/*ENGINE-START*/
+function makeEngine(D){
+  "use strict";
+  const PHYS=c=>c==="K"||c==="M";
+  const TRAVEL=50;
+  const secs=D.secs.map(a=>{const[crn,course,sec,campus,method,seats,cap,wait,pi,ms]=a;
+    return{crn,course,sec,campus,method,seats,cap,wait,profs:pi.map(i=>D.people[i]),
+      meets:ms.map(m=>({days:m[0].split(""),s:m[1],e:m[2],type:m[3],where:m[4],d0:D.dates[m[5]],d1:D.dates[m[6]]}))}});
+  const byCourse={};for(const s of secs)(byCourse[s.course]=byCourse[s.course]||[]).push(s);
+  const fullTerm={d0:null,d1:null};
+  {const c={};for(const s of secs)for(const m of s.meets){const k=m.d0+"|"+m.d1;c[k]=(c[k]||0)+1}
+   const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];if(top){[fullTerm.d0,fullTerm.d1]=top[0].split("|")}}
+  const isHalf=m=>m.d0!==fullTerm.d0||m.d1!==fullTerm.d1;
+  const isOnline=s=>!PHYS(s.campus);
+  const withLab=c=>byCourse[c+"L"]&&!c.endsWith("L")?[c,c+"L"]:[c];
+
+  function hitsBusy(s,busy){for(const m of s.meets)for(const d of m.days)for(let h=Math.floor(m.s/60);h*60<m.e;h++)if(busy.has(d+h))return true;return false}
+  function conflict(a,b){
+    const buf=PHYS(a.campus)&&PHYS(b.campus)&&a.campus!==b.campus?TRAVEL:0;
+    for(const x of a.meets)for(const y of b.meets){
+      if(!x.days.some(d=>y.days.includes(d)))continue;
+      if(x.d0&&y.d0&&(x.d1<y.d0||y.d1<x.d0))continue;
+      if(x.s<y.e+buf&&y.s<x.e+buf)return true;
+    }return false;
+  }
+  function unary(s,st){
+    const p=st.prefs;let u=0;
+    for(const m of s.meets){if(m.s<540)u-=p.noEarly?6:1;if(m.e>1080&&p.noLate)u-=6}
+    if(p.format==="prefer-in"&&isOnline(s))u-=5;if(p.format==="prefer-online"&&!isOnline(s))u-=5;
+    if(s.profs.some(n=>st.prof[n]==="prefer"))u+=8;
+    if(s.seats<=0)u-=10;
+    return u;
+  }
+  function score(pick,st){
+    const p=st.prefs,byDay={};let early=0,late=0,prefer=0,full=0,online=0;
+    for(const s of pick){
+      if(s.profs.some(n=>st.prof[n]==="prefer"))prefer++;
+      if(s.seats<=0)full++;
+      if(isOnline(s))online++;
+      for(const m of s.meets)for(const d of m.days){(byDay[d]=byDay[d]||[]).push({...m,campus:s.campus});if(m.s<540)early++;if(m.e>1080)late++}
+    }
+    let gap=0,maxGap={m:0,d:null};const switches=new Set(),campusDays=new Set();
+    for(const d in byDay){
+      const l=byDay[d].sort((a,b)=>a.s-b.s);
+      if(l.some(m=>PHYS(m.campus)))campusDays.add(d);
+      for(let i=1;i<l.length;i++){
+        const g=l[i].s-l[i-1].e;if(g>0){gap+=g;if(g>maxGap.m)maxGap={m:g,d}}
+        if(PHYS(l[i].campus)&&PHYS(l[i-1].campus)&&l[i].campus!==l[i-1].campus)switches.add(d);
+      }
+    }
+    const fmtAdj=p.format==="prefer-in"?-5*online:p.format==="prefer-online"?-5*(pick.length-online):0;
+    const sc=72-gap/60*3-campusDays.size*(p.compact?9:2)-switches.size*4-(p.noEarly?early*6:early)-(p.noLate?late*6:0)+prefer*8-full*10+fmtAdj;
+    return{score:Math.max(1,Math.min(99,Math.round(sc))),gap,maxGap,days:[...campusDays],switches:[...switches],early,late,prefer,full,online};
+  }
+  function passes(s,st){
+    if(s.seats<=0&&!st.prefs.full)return"full";
+    if(st.prefs.format==="in"&&isOnline(s))return"format";
+    if(st.prefs.format==="online"&&!isOnline(s))return"format";
+    if(st.prefs.campus!=="any"&&PHYS(s.campus)&&s.campus!==st.prefs.campus)return"campus";
+    if(s.profs.some(n=>st.prof[n]==="avoid"))return"avoid";
+    if(hitsBusy(s,st.busy))return"busy";
+    return"";
+  }
+  // how many sections of each course (and its lab) fit this student's week; 0 means it can't be scheduled
+  function okCount(c,st){let min=Infinity;for(const x of withLab(c)){const l=byCourse[x];if(!l)return 0;min=Math.min(min,l.filter(s=>!passes(s,st)).length)}return min===Infinity?0:min}
+  function solve(st,opts={}){
+    const K=opts.perCourse||24,CAP=opts.cap||250000;
+    const courses=[...new Set(st.courses.flatMap(withLab))].filter(c=>byCourse[c]);
+    const blocked=[],cands=[];
+    for(const c of courses){
+      const diag={c,total:byCourse[c].length,full:0,busy:0,format:0,campus:0,avoid:0};
+      const ok=[];
+      for(const s of byCourse[c]){const why=passes(s,st);if(why){diag[why]++;continue}ok.push(s)}
+      // collapse sections that are identical for scheduling purposes (same time, place, format, instructor)
+      const groups=new Map();
+      for(const s of ok){
+        const k=s.campus+"|"+s.method+"|"+s.profs.join(";")+"|"+s.meets.map(m=>m.days.join("")+m.s+"-"+m.e+m.d0+m.d1).join(",");
+        const g=groups.get(k);
+        if(!g)groups.set(k,{...s,alts:[]});
+        else if(s.seats>g.seats){groups.set(k,{...s,alts:[...g.alts,{crn:g.crn,seats:g.seats}]})}
+        else g.alts.push({crn:s.crn,seats:s.seats});
+      }
+      const list=[...groups.values()].map(s=>({s,u:unary(s,st)})).sort((a,b)=>b.u-a.u||b.s.seats-a.s.seats).slice(0,K).map(x=>x.s);
+      if(!list.length)blocked.push(diag);
+      cands.push({c,secs:list,options:groups.size});
+    }
+    if(blocked.length||!courses.length)return{results:[],checked:0,found:0,blocked,courses,truncated:false};
+    cands.sort((a,b)=>a.secs.length-b.secs.length);
+    const found=[],pick=[];let visits=0,truncated=false;
+    (function dfs(i){
+      if(visits>CAP){truncated=true;return}
+      if(i===cands.length){found.push({secs:[...pick],...score(pick,st)});return}
+      for(const s of cands[i].secs){visits++;if(pick.some(q=>conflict(q,s)))continue;pick.push(s);dfs(i+1);pick.pop();if(truncated)return}
+    })(0);
+    found.sort((a,b)=>b.score-a.score||b.secs.reduce((t,s)=>t+s.seats,0)-a.secs.reduce((t,s)=>t+s.seats,0));
+    // keep options whose weekly time pattern differs, so the five tabs are real alternatives
+    const seen=new Set(),results=[];
+    for(const r of found){
+      const sig=r.secs.map(s=>s.course+":"+s.campus+":"+s.meets.map(m=>m.days.join("")+m.s).join(",")).sort().join("|");
+      if(seen.has(sig))continue;seen.add(sig);results.push(r);if(results.length===5)break;
+    }
+    return{results,checked:visits,found:found.length,blocked:[],courses,truncated};
+  }
+  return{secs,byCourse,solve,okCount,passes,conflict,withLab,isHalf,isOnline,PHYS,fullTerm,TRAVEL};
+}
+/*ENGINE-END*/
+
+function startPlanner(D){
+"use strict";
+const E=makeEngine(D);
+const DAYS=["M","T","W","R","F"],DAYNAME={M:"Mon",T:"Tue",W:"Wed",R:"Thu",F:"Fri",S:"Sat",U:"Sun"};
+const H0=8,H1=22;
+const CAMPUS={K:"Kennesaw",M:"Marietta",O:"KSU Online",E:"eCore (online)"};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=m=>{let h=Math.floor(m/60),mm=m%60,ap=h>=12?"p":"a";h=h%12||12;return h+(mm?":"+String(mm).padStart(2,"0"):"")+ap};
+const MON=["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const md=s=>s?MON[+s.slice(0,2)]+" "+(+s.slice(3,5)):"";
+const TITLE_FALLBACK={"ECON 1000":"Contemporary Economic Issues","POLS 1101":"American Government","HIST 2111":"U.S. History to 1890","HIST 2112":"U.S. History since 1890","HIST 1100":"Survey of World History","HIST 1111":"World History I","HIST 1112":"World History II","MATH 1111":"College Algebra","STAT 1401":"Elementary Statistics","STAT 2332":"Probability & Data Analysis","MATH 3260":"Linear Algebra","TCOM 2010":"Technical Writing","PHIL 2010":"Intro to Philosophy","ENGL 2110":"World Literature","ENGL 2120":"British Literature","ENGL 2130":"American Literature","ENGL 2140":"African American Literature","ART 1107":"Arts in Society: Visual Arts","DANC 1107":"Arts in Society: Dance","MUSI 1107":"Arts in Society: Music","TPS 1107":"Arts in Society: Theatre","CHEM 1211":"Principles of Chemistry I","CHEM 1212":"Principles of Chemistry II","BIOL 1107":"Principles of Biology I","BIOL 1108":"Principles of Biology II","PHYS 1111":"Introductory Physics I","PHYS 1112":"Introductory Physics II","PHYS 2212":"Principles of Physics II","PSYC 1101":"Intro to Psychology","SOCI 1101":"Intro to Sociology","ECON 2105":"Principles of Macroeconomics","ECON 2106":"Principles of Microeconomics","ANTH 1102":"Intro to Anthropology","CRJU 1101":"Foundations of Criminal Justice","GEOG 1101":"World Regional Geography","STS 1101":"Science, Technology & Society","CSE 2300":"Discrete Structures for Computing","CSE 3153":"Database Systems","CSE 3801":"Professional Practices & Ethics","SWE 3313":"Intro to Software Engineering","SWE 3623":"Software Systems Requirements","SWE 3633":"Software Architecture & Design","SWE 3643":"Software Testing & QA","SWE 4324":"User-Centered Design","SWE 4663":"Software Project Management","SWE 4713":"SWE Application Domain","SWE 4724":"Software Engineering Capstone","SWE 3683":"Embedded Systems Analysis & Design","SWE 4633":"Cloud Software Development","SWE 4723":"Undergraduate Research Methods","SWE 4743":"Object-Oriented Development","SWE 4783":"User Interaction Engineering","IT 1103":"Intro to Information Technology","IT 1114":"Programming Principles","IT 3123":"Hardware/Software Concepts","IT 3203":"Intro to Web Development","IT 3223":"IT Organization & Management","IT 3423":"Operating Systems Concepts & Admin","IT 3703":"Intro to Data Analytics & Technology","IT 3883":"Advanced Application Development","IT 4323":"Data Communications & Networking","IT 4423":"Linux/Unix Administration","IT 4723":"IT Policy & Law","IT 4823":"Information Security Admin & Privacy","IT 4983":"IT Capstone","IT 4153":"Advanced Database","IT 4713":"Business Intelligence Systems","IT 4733":"Big Data Systems Admin","IT 4773":"Machine Learning for Enterprise Apps","IT 4793":"Applied Data Driven Solutions","IT 4333":"Network Configuration & Admin","IT 4403":"Advanced Web & Mobile Apps","IT 4673":"Virtual IT Systems","IT 4833":"Wireless Security","IT 4843":"Ethical Hacking","IT 4853":"Computer Forensics","IT 4863":"Web & Mobile Applications Security","IT 4883":"Infrastructure Defense","IT 4893":"Internet of Things: Applications & Security","IT 3503":"Foundations of Health IT","CS 4306":"Algorithm Analysis","CS 3622":"Fundamentals of Data Communications","CS 4504":"Parallel & Distributed Computing","CS 4308":"Concepts of Programming Languages","CS 4850":"Senior Project","CS 4265":"Big Data Analytics","CS 4412":"Data Mining","CS 4422":"Information Retrieval","CS 4522":"HPC & Parallel Programming","CS 4524":"Cloud Computing","CS 4722":"Computer Graphics & Multimedia","CS 3626":"Cryptography","CS 4612":"Software Security","CS 4622":"Computer Networks","CS 4626":"Computer & Network Security","CS 3642":"Artificial Intelligence","CS 4267":"Machine Learning","CS 4732":"Machine Vision","CS 4742":"Natural Language Processing","CS 4277":"Deep Learning","CS 4270":"Intelligent Systems in Bioinformatics","CS 4322":"Mobile Software Development","CS 4632":"Modeling and Simulation","CS 4712":"User Interface Engineering","CS 4720":"Internet Programming","CS 4514":"Real-Time Systems","CS 4523":"Programming Massively Parallel Processors","ARCH 1000":"Intro to Architecture","ARCH 1001":"Studio I","ARCH 1002":"Studio II","ARCH 1241":"Design Communication I","ARCH 2111":"Architectural Culture I","ARCH 2003":"Studio III","ARCH 2242":"Design Communication II","ARCH 2311":"Environmental Technology I","ARCH 2211":"Architectural Structures I","ARCH 2004":"Studio IV","ARCH 3112":"Architectural Culture II","ARCH 3011":"Studio V","ARCH 3313":"Environmental Technology II","ARCH 3211":"Architectural Structures II","ARCH 3012":"Studio VI","ARCH 3314":"Environmental Technology III","ARCH 3212":"Architectural Structures III","ARCH 3113":"Architectural Culture III","ARCH 4013":"Integrative Studio","ARCH 4116":"Urban Theory","ARCH 4114":"Architectural Culture IV","ARCH 4224":"Professional Practice I","ARCH 4014":"Urban Lab","ARCH 4225":"Professional Practice II","ARCH 4226":"Professional Practice III","ARCH 5015":"Focus Studio","ARCH 5006":"Thesis Research","ARCH 5017":"Thesis Studio","COMM 1100":"Human Communication","AMST 1102":"Intro to American Studies","ASIA 1102":"Intro to Asian Studies","BLCK 1102":"Intro to Black Studies","GWST 1102":"Intro to Gender & Women's Studies","LALS 1102":"Intro to Latin American Studies","PAX 1102":"Intro to Peace Studies","RELS 1102":"Intro to Religious Studies","POLS 2401":"Global Issues","LDRS 2300":"Leadership","ISD 2700":"Intro to Interdisciplinary Studies"};
+const title=c=>D.titles[c]?D.titles[c][0]:(TITLE_FALLBACK[c]||(/^[A-Z]{3,4} 100[12]$/.test(c)?c.split(" ")[0]+" language "+(c.endsWith("1")?"I":"II"):""));
+const cr=c=>D.titles[c]?D.titles[c][1]:0;
+
+/* ---------- majors (entered from KSU curriculum sheets, catalog 2025-26) ---------- */
+const L=s=>s.split(",").map(x=>x.trim()).filter(Boolean);
+const OPT={
+  I:L("AMST 1102, ASIA 1102, BLCK 1102, COMM 1100, GWST 1102, ISD 2700, LALS 1102, LDRS 2300, PAX 1102, POLS 2401, RELS 1102"),
+  A1:L("ENGL 2110, ENGL 2120, ENGL 2130, ENGL 2140, PHIL 2010, SPAN 1001, SPAN 1002, FREN 1001, FREN 1002, GRMN 1001, GRMN 1002, CHIN 1001, CHIN 1002, JAPN 1001, JAPN 1002, KOR 1001, KOR 1002, ITAL 1001, ITAL 1002, LATN 1001, LATN 1002, PORT 1001, PORT 1002, RUSS 1001, RUSS 1002, HEBR 1001, HEBR 1002, WLC 1001, WLC 1002, WLC 2209"),
+  A2:L("ART 1107, DANC 1107, MUSI 1107, TPS 1107"),
+  SCI:L("PHYS 2211, PHYS 2212, PHYS 1111, PHYS 1112, CHEM 1211, CHEM 1212, BIOL 1107, BIOL 1108"),
+  S1:L("HIST 1111, HIST 1112, HIST 1100"),
+  S2:L("PSYC 1101, SOCI 1101, ECON 2105, ECON 2106, ANTH 1102, CRJU 1101, GEOG 1101, STS 1101")
+};
+// Prerequisites. Each entry is a list of requirements that must all be met.
+// "X" = completed earlier; "X*" = completed earlier or taken the same term; ["A","B"] = either one.
+const PRE={
+ "ENGL 1102":["ENGL 1101"],"TCOM 2010":["ENGL 1102"],
+ "MATH 1113":[],"MATH 1190":["MATH 1113"],"MATH 2202":["MATH 1190"],"MATH 2345":[["MATH 1113","MATH 1190"]],"MATH 3260":["MATH 1190"],
+ "STAT 2332":["MATH 1190"],"CSE 2300":["CSE 1321","MATH 1113"],
+ "PHYS 1111":["MATH 1113"],"PHYS 1112":["PHYS 1111"],"PHYS 2211":["MATH 1190"],"PHYS 2212":["PHYS 2211"],"CHEM 1212":["CHEM 1211"],
+ "CSE 1322":["CSE 1321",["MATH 1113*","MATH 1190*","MATH 2202*"]],
+ "CSE 3153":[["CSE 1322","IT 1114"]],"CSE 3801":[["CSE 1322","IT 3123*"]],
+ "CS 3305":["MATH 2345","CSE 1322"],"CS 3503":["CSE 1322"],"CS 3502":["CS 3305","CS 3503"],"CS 3410":["CSE 1322"],"CS 3622":["CSE 1322"],
+ "CS 4306":["CS 3305"],"CS 4308":["CS 3305","CS 3503"],"CS 4504":["CS 3305","CS 3503","CS 3502*"],"CS 4850":["CS 3502","SWE 3313"],
+ "CS 4265":["CS 3305",["CS 3410","CSE 3153"]],"CS 4412":["CS 3305","CS 3410"],"CS 4422":["CS 3305","CS 3410"],"CS 4522":["CS 4504"],"CS 4524":["CS 4504"],
+ "CS 4722":["CS 3305"],"CS 3626":["MATH 2345","CS 3305*"],"CS 4612":["CS 3626","CS 3502"],"CS 4622":["CS 3503","CS 3622"],"CS 4626":["CS 3626","CS 4622"],
+ "CS 3642":["CS 3305"],"CS 4267":["CS 3642"],"CS 4732":["CS 3642"],"CS 4742":["CS 3642"],"CS 4277":["CS 3642","CS 4267*"],
+ "CS 4270":["CS 3305",["CS 3410","CSE 3153"]],"CS 4322":["CS 3305","SWE 3313",["CS 3410","CSE 3153"]],"CS 4632":["CS 3305"],"CS 4712":["CSE 1322"],
+ "CS 4720":["CS 3305",["CS 3410","CSE 3153"]],"CS 4514":["CS 3502"],"CS 4523":["CS 3305","CS 3502"],
+ "SWE 3313":["CSE 1322"],"SWE 3623":["SWE 3313",["CSE 2300","MATH 2345"]],"SWE 3633":["SWE 3313"],"SWE 3643":["SWE 3313"],"SWE 4324":["SWE 3313"],
+ "SWE 4663":["SWE 3313","STAT 2332"],"SWE 4713":["SWE 3623","SWE 3643*","SWE 4663*"],"SWE 4724":["SWE 3623","SWE 3643*","SWE 4663*"],
+ "SWE 3683":["CS 3305"],"SWE 4633":["CS 3305"],"SWE 4723":["SWE 3313"],"SWE 4743":["CS 3305"],"SWE 4783":[["SWE 3313","SWE 4324"]],
+ "IT 1103":["IT 1114*"],"IT 3123":[["IT 1114","CSE 1321"]],"IT 3203":[["IT 1114","CSE 1321"]],"IT 3423":["IT 3123"],"IT 3703":["IT 3123","CSE 3153*"],
+ "IT 3883":["CSE 3153",["IT 1114","CSE 1321"]],"IT 4323":["IT 3123"],"IT 4423":["IT 3423"],"IT 4723":["IT 3123","IT 3223"],
+ "IT 4823":[["IT 3123","CS 3503"],["CSE 2300","MATH 2345"]],"IT 4983":["IT 3423","IT 3223","IT 3203","IT 3883","IT 4323*","IT 4823*"],
+ "IT 4153":["CSE 3153"],"IT 4713":["IT 3703"],"IT 4733":["IT 3703"],"IT 4773":["IT 3703"],"IT 4793":["IT 3703"],"IT 4333":["IT 4323"],"IT 4403":["IT 3203"],
+ "IT 4673":["IT 3423","IT 4323","CSE 3153"],"IT 4833":[["IT 4323","CS 4622"]],"IT 4843":[["IT 4323","CS 4622"]],"IT 4853":[["IT 4323","CS 4622"]],
+ "IT 4863":["IT 3203"],"IT 4883":[["IT 4323","CS 4622"]],"IT 4893":["IT 4823","IT 4323"],"IT 3503":["ENGL 1102"],
+ "ARCH 1002":["ARCH 1001"],"ARCH 2003":["ARCH 1002"],"ARCH 2004":["ARCH 2003"],"ARCH 3011":["ARCH 2004"],"ARCH 3012":["ARCH 3011"],
+ "ARCH 4013":["ARCH 3012","ARCH 3314","ARCH 3212"],"ARCH 4014":["ARCH 4013","ARCH 4116"],"ARCH 5015":["ARCH 4014"],"ARCH 5006":["ARCH 4014"],"ARCH 5017":["ARCH 5015","ARCH 5006"],
+ "ARCH 2242":["ARCH 1241"],"ARCH 2211":[["PHYS 1111","PHYS 2211"]],"ARCH 3211":["ARCH 2211"],"ARCH 3212":["ARCH 3211"],
+ "ARCH 3313":["ARCH 2311"],"ARCH 3314":["ARCH 3313"],"ARCH 3112":["ARCH 2111"],"ARCH 3113":["ARCH 3112"],"ARCH 4114":["ARCH 3113"],
+ "ARCH 4224":["ARCH 4013*"],"ARCH 4225":["ARCH 4224"],"ARCH 4226":["ARCH 4224"]
+};
+for(const c of OPT.A1)if(/ 1002$/.test(c))PRE[c]=[c.replace(/1002$/,"1001")];
+const NOTE={"ARCH 2003":"Needs admission to second-year studio (portfolio review)","CSE 1321":"Grade of B needed to move on","CSE 1322":"Grade of B needed to move on",
+ "MATH 1190":"Or place into Calculus","MATH 1113":"Or place into Precalculus","ARCH 3011":"Take with ARCH 3313 and ARCH 3211","ARCH 3012":"Take with ARCH 3314 and ARCH 3212"};
+// credit hours for courses not in the downloaded data (lecture only; labs add 1)
+const CRDEF={"ECON 1000":2,"CSE 3801":2,"IT 3883":4,"SWE 4724":4,"MATH 1190":4,"MATH 2202":4,"ARCH 1000":2,"ARCH 2242":2,"ARCH 4224":2,"ARCH 4225":2,
+ "ARCH 1001":4,"ARCH 1002":4,"ARCH 2003":4,"ARCH 2004":4,"ARCH 3011":4,"ARCH 3012":4,"ARCH 4013":4,"ARCH 4014":4,"ARCH 5015":4,"ARCH 5017":4};
+const LABBED=new Set(["CSE 1321","CSE 1322","IT 1114","PHYS 1111","PHYS 1112","PHYS 2211","PHYS 2212","CHEM 1211","CHEM 1212","BIOL 1107","BIOL 1108"]);
+const TOGETHER=[["ARCH 3011","ARCH 3313","ARCH 3211"],["ARCH 3012","ARCH 3314","ARCH 3212"]];
+const SCI_EXCL=[["PHYS 1111","PHYS 2211"],["PHYS 1112","PHYS 2212"]];
+
+const geneds=(m,t,sciPick)=>({id:"ge",name:"General education",items:[
+  {c:"ENGL 1101"},{c:"ENGL 1102"},{c:m},{c:t},{c:"ECON 1000"},{c:"POLS 1101"},
+  {slot:"I",label:"Area I · institutional priority",pick:1,opts:OPT.I},
+  {slot:"P",label:"U.S. history",pick:1,opts:["HIST 2111","HIST 2112"]},
+  {slot:"A1",label:"Humanities or world language",pick:1,opts:OPT.A1},
+  {slot:"A2",label:"Arts",pick:1,opts:OPT.A2},
+  {slot:"T",label:"Lab science (lecture + lab)",pick:sciPick,opts:OPT.SCI,excl:SCI_EXCL},
+  {slot:"S1",label:"World history",pick:1,opts:OPT.S1},
+  {slot:"S2",label:"Social science",pick:1,opts:OPT.S2}]});
+const CS_ELECT=L("CS 3642, CS 4267, CS 4732, CS 4742, CS 4277, CS 3626, CS 4612, CS 4622, CS 4626, CS 4265, CS 4412, CS 4422, CS 4522, CS 4524, CS 4722, CS 4270, CS 4322, CS 4632, CS 4712, CS 4720, SWE 3633, SWE 3643, SWE 3683, SWE 4633");
+const MAJORS={
+ cs:{name:"B.S. Computer Science",src:"https://campus.kennesaw.edu/colleges-departments/ccse/advising/resources/docs/curriculum-sheets/bscs-2025.pdf",srcName:"BSCS curriculum sheet, catalog 2025–26",
+  groups:[geneds("MATH 1113","MATH 1190",2),
+   {id:"core",name:"Core field of study",items:L("CSE 1321, CSE 1322, MATH 2202, MATH 2345, TCOM 2010").map(c=>({c}))},
+   {id:"major",name:"Major requirements",items:L("CS 3305, CS 3503, SWE 3313, CS 3410, CS 3622, CSE 3801, STAT 2332, MATH 3260, CS 3502, CS 4306, CS 4308, CS 4504, CS 4850").map(c=>({c}))},
+   {id:"elect",name:"Major electives",items:[{slot:"CSE",label:"CS electives or a concentration (5 courses)",pick:5,opts:CS_ELECT,note:"At least 3 must be CS courses; up to 2 can be SWE courses. Concentrations: AI (CS 3642 first), Cyber & Network Security (CS 3626 first), Data Science (CS 4265, 4412, 4422)."}]}],
+  extra:"Also needs 5 hours of free electives."},
+ swe:{name:"B.S. Software Engineering",src:"https://campus.kennesaw.edu/colleges-departments/ccse/advising/resources/docs/curriculum-sheets/bsswe-2025.pdf",srcName:"BSSWE curriculum sheet, catalog 2025–26",
+  groups:[geneds("MATH 1190","MATH 2202",2),
+   {id:"core",name:"Core field of study",items:L("CSE 1321, CSE 1322, MATH 2345, TCOM 2010, STAT 2332").map(c=>({c}))},
+   {id:"major",name:"Major requirements",items:L("SWE 3313, CS 3305, CS 3503, CSE 3153, CSE 3801, CS 3502, SWE 3623, SWE 3633, SWE 3643, SWE 4324, SWE 4663, SWE 4713, SWE 4724").map(c=>({c}))},
+   {id:"elect",name:"Major electives",items:[{slot:"SWEL",label:"SWE electives (2 courses)",pick:2,opts:L("SWE 3683, SWE 4633, SWE 4723, SWE 4743, SWE 4783, CS 4720, CS 4632, CS 4712, CS 4514, CS 4308, CS 4612, CS 4524, CS 4504, CS 4523, CS 4622, CS 4722, CS 4732, IT 4823"),note:"At least one must come from List 1 (SWE 3683–4783, CS 4720, 4524, 4612, 4632, 4712, 4514, 4308)."}]}],
+  extra:"Also needs 8 hours of math/science electives (choose with a CCSE advisor) and 5 hours of free electives."},
+ it:{name:"B.S. Information Technology",src:"https://campus.kennesaw.edu/colleges-departments/ccse/advising/resources/docs/curriculum-sheets/bsit-2025.pdf",srcName:"BSIT curriculum sheet, catalog 2025–26",
+  groups:[geneds("MATH 1111","MATH 1113",2),
+   {id:"core",name:"Core field of study",items:[{c:"IT 1114"},{c:"IT 1103"},{c:"CSE 1321"},{slot:"DISC",label:"Discrete math",pick:1,opts:["CSE 2300","MATH 2345"]},{slot:"STAT",label:"Statistics",pick:1,opts:["STAT 1401","STAT 2332"]}]},
+   {id:"major",name:"Major requirements",items:L("IT 3123, IT 3203, IT 3223, CSE 3153, CSE 3801, IT 3423, IT 4323, IT 3703, IT 3883, IT 4423, IT 4723, IT 4823, IT 4983").map(c=>({c}))},
+   {id:"elect",name:"Concentration",items:[{slot:"ITC",label:"Concentration courses (5 courses)",pick:5,opts:L("IT 4153, IT 4713, IT 4733, IT 4773, IT 4793, IT 4333, IT 4403, IT 4673, IT 4833, IT 4843, IT 4853, IT 4863, IT 4883, IT 4893, IT 3503"),note:"Four must come from one concentration: Data Analytics (IT 4153, 4713, 4733, 4773, 4793), Enterprise Systems (IT 4153, 4333, 4403, 4673, 4713) or Cyber Operations Security (IT 4833, 4843, 4853, 4863, 4883, 4893)."}]}],
+  extra:"Also needs 6 hours of free electives. KSU recommends starting with IT 1103 and IT 1114, then CSE 1321."},
+ arch:{name:"Bachelor of Architecture",src:"https://campus.kennesaw.edu/colleges-departments/cacm/docs/2025-architecture-curriculum-chart.pdf",srcName:"Architecture curriculum chart, 2025",seq:true,
+  groups:[{id:"ge",name:"General education",items:[{c:"ENGL 1101",y:0},{c:"MATH 1113",y:0},{c:"ENGL 1102",y:1},{slot:"PH",label:"Physics with lab",pick:1,opts:["PHYS 1111","PHYS 2211"],y:1},
+     {c:"ECON 1000"},{c:"POLS 1101"},{slot:"P",label:"U.S. history",pick:1,opts:["HIST 2111","HIST 2112"]},{slot:"I",label:"Area I · institutional priority",pick:1,opts:OPT.I},
+     {slot:"A1",label:"Humanities or world language",pick:1,opts:OPT.A1},{slot:"A2",label:"Arts",pick:1,opts:OPT.A2},{slot:"S1",label:"World history",pick:1,opts:OPT.S1},{slot:"S2",label:"Social science",pick:1,opts:OPT.S2}]},
+   {id:"major",name:"Architecture sequence",items:[
+     ["ARCH 1000",0],["ARCH 1001",0],["ARCH 1241",0],["ARCH 1002",1],["ARCH 2111",1],
+     ["ARCH 2003",2],["ARCH 2242",2],["ARCH 2311",2],["ARCH 2211",2],["ARCH 2004",3],["ARCH 3112",3],
+     ["ARCH 3011",4],["ARCH 3313",4],["ARCH 3211",4],["ARCH 3012",5],["ARCH 3314",5],["ARCH 3212",5],["ARCH 3113",5],
+     ["ARCH 4013",6],["ARCH 4116",6],["ARCH 4114",6],["ARCH 4224",6],["ARCH 4014",7],["ARCH 4225",7],["ARCH 4226",7],
+     ["ARCH 5015",8],["ARCH 5006",8],["ARCH 5017",9]].map(([c,y])=>({c,y}))}],
+  extra:"Also needs 13 hours of electives or a minor. Studios run in a fixed order; falling out of sequence can add a year."}
+};
+const TERMS=["Year 1 Fall","Year 1 Spring","Year 2 Fall","Year 2 Spring","Year 3 Fall","Year 3 Spring","Year 4 Fall","Year 4 Spring","Year 5 Fall","Year 5 Spring"];
+const ALL_CODES=new Set(Object.values(MAJORS).flatMap(m=>m.groups.flatMap(g=>g.items.flatMap(it=>it.c?[it.c]:it.opts))));
+const HAVE_SUBJ=new Set(E.secs.map(s=>s.course.split(" ")[0]));
+const subj=c=>c.split(" ")[0];
+
+/* ---------- state ---------- */
+const defaults=()=>({major:"cs",target:15,summer:false,summerTarget:6,completed:["ENGL 1101","MATH 1113","CSE 1321","COMM 1100"],selected:[],
+  busy:["T8","T9","T10","T11","R8","R9","R10","R11"],prefs:{noEarly:true,noLate:false,compact:false,full:false,format:"prefer-in",campus:"any"},prof:{},built:false});
+let saved=null;try{saved=JSON.parse(localStorage.getItem("ksu-planner-v3")||"null")}catch{}
+const init=Object.assign(defaults(),saved||{});
+const state={major:MAJORS[init.major]?init.major:"cs",target:+init.target||15,summer:!!init.summer,summerTarget:+init.summerTarget||6,completed:new Set(init.completed),selected:new Set(init.selected.filter(c=>D.titles[c])),busy:new Set(init.busy),
+  prefs:Object.assign(defaults().prefs,init.prefs),prof:init.prof||{},out:null,active:0,built:!!init.built,build:init.build&&init.build.terms?init.build:null};
+function persist(){try{localStorage.setItem("ksu-planner-v3",JSON.stringify({major:state.major,target:state.target,summer:state.summer,summerTarget:state.summerTarget,completed:[...state.completed],selected:[...state.selected],busy:[...state.busy],prefs:state.prefs,prof:state.prof,built:state.built,build:state.build}))}catch{}}
+
+$("dataBadge").innerHTML=`<b>${esc(D.termName)} · real KSU sections</b><span>${E.secs.length.toLocaleString()} sections · ${HAVE_SUBJ.size} subjects · pulled ${esc(D.fetched)}</span>`;
+$("courseList").innerHTML=Object.keys(D.titles).filter(c=>!c.endsWith("L")||!D.titles[c.slice(0,-1)]).sort().map(c=>`<option value="${esc(c)} — ${esc(title(c))}"></option>`).join("");
+$("major").innerHTML=Object.entries(MAJORS).map(([k,m])=>`<option value="${k}">${esc(m.name)}</option>`).join("");
+
+/* ---------- requirement logic ---------- */
+const labsOf=c=>LABBED.has(c)||D.titles[c+"L"]?[c,c+"L"]:[c];
+const crOne=c=>D.titles[c]?D.titles[c][1]:(CRDEF[c]||(/L$/.test(c)?1:3));
+const credits=c=>labsOf(c).reduce((a,x)=>a+crOne(x),0);
+const isDone=c=>state.completed.has(c);
+function unmet(c,taking,done=state.completed){
+  const out=[];
+  for(const req of PRE[c]||[]){
+    const alts=Array.isArray(req)?req:[req];
+    const ok=alts.some(a=>{const conc=a.endsWith("*"),code=a.replace("*","");return done.has(code)||(conc&&taking&&taking.has(code))});
+    if(!ok)out.push(alts.map(a=>a.replace("*"," (or same term)")).join(" or "));
+  }
+  return out;
+}
+function availability(c){
+  if(!HAVE_SUBJ.has(subj(c)))return{k:"nodata",t:`${subj(c)} isn't in your downloaded data`};
+  if(!D.titles[c])return{k:"notoffered",t:`Not offered in ${D.termName}`};
+  return{k:"offered",t:""};
+}
+const major=()=>MAJORS[state.major];
+function slotDone(it,done=state.completed){return it.opts.filter(c=>done.has(c))}
+function slotExcluded(it,c,taking,done=state.completed){return(it.excl||[]).some(p=>p.includes(c)&&p.some(o=>o!==c&&(done.has(o)||(taking&&taking.has(o)))))}
+function requiredCodes(m){return m.groups.flatMap(g=>g.items.flatMap(it=>it.c?[it.c]:[]))}
+// how many later requirements in this major depend on a course, directly or through a chain
+function chainInfo(m){
+  const pool=new Set(m.groups.flatMap(g=>g.items.flatMap(it=>it.c?[it.c]:it.opts)));
+  const kids={};for(const c of pool)for(const req of PRE[c]||[])for(const a of(Array.isArray(req)?req:[req])){const p=a.replace("*","");(kids[p]=kids[p]||new Set()).add(c)}
+  const req=new Set(requiredCodes(m)),memo={};
+  function walk(c,seen){if(memo[c])return memo[c];let depth=0,all=new Set();for(const k of kids[c]||[]){if(seen.has(k))continue;const r=walk(k,new Set([...seen,k]));depth=Math.max(depth,r.depth+1);all.add(k);r.all.forEach(x=>all.add(x))}return memo[c]={depth,all}}
+  return c=>{const r=walk(c,new Set([c]));return{depth:r.depth,count:[...r.all].filter(x=>req.has(x)).length}};
+}
+function progress(m){
+  let need=0,have=0;
+  for(const g of m.groups)for(const it of g.items){if(it.c){need++;if(isDone(it.c))have++}else{need+=it.pick;have+=Math.min(it.pick,slotDone(it).length)}}
+  return{need,have};
+}
+
+/* ---------- year planner ---------- */
+const THIS_SEASON=D.term.endsWith("08")?"fall":"spring";
+// live = this term, checked against real sections; otherwise a course plan only (sections not published yet)
+function planTerm({done,live,season,target}){
+  const m=major(),chain=chainInfo(m);
+  const st={busy:state.busy,prefs:state.prefs,prof:state.prof};
+  const dn=c=>done.has(c);
+  const cands=[],skipped=[];
+  // in a fixed sequence, only look at the earliest unfinished year and the one after it
+  const ys=m.seq?m.groups.flatMap(g=>g.items.filter(it=>it.c&&it.y!=null&&!dn(it.c)).map(it=>it.y)):[];
+  const maxY=ys.length?Math.min(...ys)+1:99;
+  for(const g of m.groups)for(const it of g.items){
+    const list=it.c?[it.c]:it.opts;
+    if(it.c&&dn(it.c))continue;
+    if(it.y!=null&&it.y>maxY)continue;
+    // studio-sequence courses run in their own semester (even years = fall, odd = spring)
+    if(m.seq&&it.y!=null&&g.id!=="ge"&&(it.y%2===0?"fall":"spring")!==season)continue;
+    if(it.slot&&slotDone(it,done).length>=it.pick)continue;
+    for(const c of list){
+      if(dn(c))continue;
+      const ch=chain(c),y=it.y??null,level=+c.split(" ")[1][0];
+      // in a fixed sequence, earlier-year courses come first; gen-eds without a set year fill remaining hours
+      let pri=m.seq?(y!=null?100-y*10:30)+ch.depth*3:ch.depth*10+ch.count*2+(g.id==="major"||g.id==="core"?4:0)-level;
+      if(g.id==="elect")pri-=6;
+      // summer sessions are short and mostly offer gen-eds and lower-level courses
+      if(season==="summer"){if(g.id==="ge")pri+=8;else if(level>=3)pri-=15}
+      // for a future term, prefer courses KSU has on the books (offered now) over unknown ones
+      if(!live){if(D.titles[c])pri+=1;else if(HAVE_SUBJ.has(subj(c)))pri-=2}
+      cands.push({c,it,g,pri,ch,y});
+    }
+  }
+  cands.sort((a,b)=>b.pri-a.pri);
+  const picks=[],taking=new Set(),slotUse={},why={};let hrs=0,majorCount=0;
+  const fits=c=>E.okCount(c,st)>0;
+  function tryAdd(x,pass){
+    const c=x.c;if(taking.has(c))return false;
+    const group=TOGETHER.find(t=>t.includes(c))||[c];
+    const add=group.filter(k=>!dn(k)&&!taking.has(k));
+    const h=add.reduce((a,k)=>a+credits(k),0);
+    if(hrs+h>target)return false;
+    if(x.it.slot){const have=slotDone(x.it,done).length,used=slotUse[x.it.slot]||0;if(x.it.pick-have-used<=0)return false;if(x.it.pick-have>1&&used>=1&&x.g.id==="ge")return false;if(slotExcluded(x.it,c,taking,done))return false}
+    if(pass===0&&!m.seq&&(x.g.id==="major"||x.g.id==="elect"||x.g.id==="core")&&majorCount>=(season==="summer"?1:3))return false;
+    const tmp=new Set([...taking,...add]);
+    for(const k of add){
+      if(unmet(k,tmp,done).length)return false;
+      if(!live)continue;
+      const av=availability(k);
+      if(av.k!=="offered"){if(pass===0&&!x.it.slot)skipped.push({c:k,t:av.t,nodata:av.k==="nodata"});return false}
+      if(!fits(k)){if(pass===0)skipped.push({c:k,t:"no section fits your busy hours and settings"});return false}
+    }
+    for(const k of add){picks.push(k);taking.add(k)}
+    hrs+=h;if(x.it.slot)slotUse[x.it.slot]=(slotUse[x.it.slot]||0)+1;
+    if(x.g.id!=="ge")majorCount+=add.length;
+    const reason=m.seq&&x.y!=null&&x.g.id!=="ge"?`${TERMS[x.y]} in the recommended sequence`:x.ch.count?`unlocks ${x.ch.count} later requirement${x.ch.count>1?"s":""}`:x.g.id==="ge"?`general education${x.it.slot?" · "+x.it.label:""}`:x.g.id==="elect"?x.it.label:"required for the major";
+    for(const k of add)why[k]=k===c?reason:`taken together with ${c}`;
+    return true;
+  }
+  // pass 0 keeps a balance of at most 3 major courses; pass 1 fills any remaining hours
+  for(const pass of[0,1])for(const x of cands){if(hrs>=target-1)break;tryAdd(x,pass)}
+  const dropped=[];
+  if(live){
+    // if the picked set can't be combined into one schedule, drop the lowest-priority course and try again
+    let out=E.solve({courses:picks,...st});
+    while(!out.results.length&&picks.length>1&&dropped.length<3){const c=picks.pop();dropped.push(c);delete why[c];out=E.solve({courses:picks,...st})}
+  }
+  const seen=new Set();
+  const sk=skipped.filter(s=>!seen.has(s.c)&&seen.add(s.c)&&!picks.includes(s.c));
+  return{picks:picks.map(c=>({c,why:why[c],known:!!D.titles[c]})),hrs:picks.reduce((a,c)=>a+credits(c),0),dropped,
+    nodata:sk.filter(s=>s.nodata).map(s=>s.c),skipped:sk.filter(s=>!s.nodata).slice(0,5)};
+}
+function termAfter(code){const y=+code.slice(0,4),t=code.slice(4);
+  return t==="01"?{code:y+"05",name:"Summer "+y,season:"summer"}:t==="05"?{code:y+"08",name:"Fall "+y,season:"fall"}:{code:(y+1)+"01",name:"Spring "+(y+1),season:"spring"}}
+// the terms after this one that make up "a year": one more fall/spring term, plus summer if the student wants it
+function followingTerms(){
+  const out=[];let code=D.term,regular=1;
+  while(out.length<4){
+    const n=termAfter(code);code=n.code;
+    if(n.season==="summer"){if(state.summer&&regular<=2)out.push(n);if(regular>=2)break;continue}
+    if(regular>=2)break;
+    out.push(n);regular++;
+  }
+  return out;
+}
+function buildTerm(){
+  const t1=planTerm({done:state.completed,live:true,season:THIS_SEASON,target:state.target});
+  const terms=[{...t1,name:D.termName,live:true}];
+  let done=new Set([...state.completed,...t1.picks.map(p=>p.c)]);
+  for(const n of followingTerms()){
+    const t=planTerm({done,live:false,season:n.season,target:n.season==="summer"?state.summerTarget:state.target});
+    terms.push({...t,name:n.name,code:n.code,season:n.season});
+    t.picks.forEach(p=>done.add(p.c));
+  }
+  state.selected=new Set(t1.picks.map(p=>p.c));state.built=true;
+  state.build={terms};
+}
+
+/* ---------- render requirements ---------- */
+function statusOf(c){
+  if(isDone(c))return{k:"done",t:"Done"};
+  if(state.selected.has(c))return{k:"ok",t:"Taking this term"};
+  const u=unmet(c,state.selected);
+  if(u.length)return{k:"lock",t:"Needs "+u.join(", ")};
+  const av=availability(c);
+  if(av.k!=="offered")return{k:"na",t:av.t};
+  return{k:"ok",t:"Eligible · offered this term"};
+}
+function courseRow(c,y){
+  const s=statusOf(c),offered=availability(c).k==="offered",lab=labsOf(c).length>1;
+  const row=document.createElement("div");row.className="crow";
+  row.innerHTML=`<div><span class="code">${esc(c)}</span>${lab?' <span class="small">+ lab</span>':""}${y!=null&&major().seq?`<span class="tag">${esc(TERMS[y])}</span>`:""} <span class="name">${esc(title(c)||"")}${title(c)?" · ":""}${credits(c)} cr</span>${s.k!=="done"?`<span class="st ${s.k}">${esc(s.t)}</span>`:""}${NOTE[c]&&!isDone(c)?`<span class="st na">${esc(NOTE[c])}</span>`:""}</div>`;
+  const bd=document.createElement("button");bd.className="tog done";bd.textContent="Done";bd.setAttribute("aria-pressed",isDone(c));
+  bd.onclick=()=>{isDone(c)?state.completed.delete(c):(state.completed.add(c),state.selected.delete(c));update()};
+  const sel=state.selected.has(c);
+  const bt=document.createElement("button");bt.className="tog take";bt.textContent=sel?"Taking":"Add";bt.setAttribute("aria-pressed",sel);
+  bt.disabled=isDone(c)||!offered||(!sel&&unmet(c,state.selected).length>0);
+  bt.onclick=()=>{sel?state.selected.delete(c):state.selected.add(c);update()};
+  row.append(bd,bt);return row;
+}
+function slotRow(it){
+  const done=slotDone(it),taking=it.opts.filter(c=>state.selected.has(c)),left=it.pick-done.length;
+  const box=document.createElement("div");box.className="slot";
+  box.innerHTML=`<div class="head"><b>${esc(it.label)}</b><span class="small">${Math.min(done.length,it.pick)} of ${it.pick} done${it.y!=null&&major().seq?" · "+esc(TERMS[it.y]):""}</span></div>
+   ${it.note?`<span class="small">${esc(it.note)}</span>`:""}
+   ${done.length||taking.length?`<div class="chips">${done.map(c=>`<span class="chip"><b>${esc(c)}</b>Done<button data-undo="${esc(c)}" aria-label="Unmark ${esc(c)}">×</button></span>`).join("")}${taking.map(c=>`<span class="chip"><b>${esc(c)}</b>Taking<button data-drop="${esc(c)}" aria-label="Remove ${esc(c)}">×</button></span>`).join("")}</div>`:""}`;
+  if(left>0){
+    const opts=it.opts.filter(c=>!isDone(c)&&!state.selected.has(c)).map(c=>{const s=statusOf(c),ex=slotExcluded(it,c,state.selected);return{c,s,ex,rank:ex?3:s.k==="ok"?0:s.k==="na"?2:1}}).sort((a,b)=>a.rank-b.rank);
+    const r=document.createElement("div");r.className="row";
+    const sel=document.createElement("select");sel.setAttribute("aria-label",it.label);
+    sel.innerHTML=opts.map(o=>`<option value="${esc(o.c)}">${esc(o.c)}${title(o.c)?" — "+esc(title(o.c)):""}${o.ex?" (can't combine)":o.s.k==="ok"?"":o.s.k==="lock"?" (locked)":" (not this term)"}</option>`).join("");
+    const add=document.createElement("button");add.className="tog take";add.textContent="Add";
+    add.onclick=()=>{const c=sel.value,o=opts.find(x=>x.c===c);if(!o||o.s.k!=="ok"||o.ex){$("courseStatus").textContent=c+": "+(o&&o.ex?"can't be combined with a course you already have for this requirement.":o?o.s.t:"");return}state.selected.add(c);update()};
+    const dn=document.createElement("button");dn.className="tog done";dn.textContent="Mark done";
+    dn.onclick=()=>{state.completed.add(sel.value);state.selected.delete(sel.value);update()};
+    r.append(sel,add,dn);box.append(r);
+  }
+  box.querySelectorAll("[data-undo]").forEach(b=>b.onclick=()=>{state.completed.delete(b.dataset.undo);update()});
+  box.querySelectorAll("[data-drop]").forEach(b=>b.onclick=()=>{state.selected.delete(b.dataset.drop);update()});
+  return box;
+}
+let openGroups=null;
+function renderReqs(){
+  const m=major(),box=$("reqs");
+  $("major").value=state.major;$("target").value=String(state.target);$("pSummer").checked=state.summer;$("summerTarget").value=String(state.summerTarget);$("summerTarget").disabled=!state.summer;
+  $("majorSource").innerHTML=`From KSU's <a href="${m.src}" target="_blank" rel="noopener">${esc(m.srcName)}</a>. ${esc(m.extra)}`;
+  const p=progress(m);$("reqProgress").textContent=`${p.have} of ${p.need} done`;
+  if(openGroups)box.querySelectorAll("details").forEach(d=>openGroups[d.dataset.g]=d.open);
+  box.innerHTML="";
+  const firstOpen=m.groups.find(g=>g.items.some(it=>it.c?!isDone(it.c):slotDone(it).length<it.pick));
+  for(const g of m.groups){
+    const total=g.items.reduce((a,it)=>a+(it.c?1:it.pick),0),have=g.items.reduce((a,it)=>a+(it.c?(isDone(it.c)?1:0):Math.min(it.pick,slotDone(it).length)),0);
+    const d=document.createElement("details");d.className="rg";d.dataset.g=g.id;
+    d.open=openGroups&&g.id in openGroups?openGroups[g.id]:g===firstOpen||g.id==="major";
+    d.innerHTML=`<summary><span>${esc(g.name)}</span><span>${have}/${total}</span><span class="meter"><i style="width:${total?have/total*100:0}%"></i></span></summary>`;
+    for(const it of g.items)d.append(it.c?courseRow(it.c,it.y):slotRow(it));
+    box.append(d);
+  }
+  openGroups=openGroups||{};
+  // subjects this major uses that aren't in the downloaded data
+  const need=[...new Set(m.groups.flatMap(g=>g.items.flatMap(it=>it.c?[it.c]:it.opts)).map(subj))].sort();
+  const miss=need.filter(s=>!HAVE_SUBJ.has(s));
+  if(miss.length){
+    const all=[...new Set([...ALL_CODES].map(subj).concat([...HAVE_SUBJ]))].sort();
+    const cmd=`py ksu_sections.py --base-url "https://srs-owlexpress.kennesaw.edu/StudentRegistrationSsb/ssb" --term ${D.term} --subjects ${all.join(" ")}`;
+    $("dataGap").innerHTML=`<div class="warnbox"><span><b>Your data is missing ${miss.length} subject${miss.length>1?"s":""} this major uses:</b> ${miss.map(esc).join(", ")}. Those courses can't be scheduled until the server downloads them. Site admin: add them to the KSU_SUBJECTS setting.</span></div>`;
+  }else $("dataGap").innerHTML="";
+}
+function renderBuild(){
+  const b=state.build,box=$("buildOut");
+  if(!b||!b.terms){box.innerHTML="";return}
+  const list=t=>`<ol>${t.picks.map(p=>`<li><b>${esc(p.c)}</b> ${esc(title(p.c))} <span class="small">· ${credits(p.c)} cr · ${esc(p.why||"")}</span></li>`).join("")}</ol>`;
+  const total=b.terms.reduce((a,t)=>a+t.hrs,0);
+  const cards=b.terms.map((t,i)=>{
+    const head=`${esc(t.name)} · ${t.hrs} credit hours`;
+    if(t.live){
+      if(!t.picks.length)return`<div class="build"><b>${esc(t.name)}: nothing to add yet.</b><span class="small">No remaining requirement is both eligible and schedulable this term. Check the notes in Requirements, or download more subjects.</span></div>`;
+      return`<div class="build"><b>${head}</b><span class="small">Checked against real sections; your schedules are on the right.</span>${list(t)}
+      ${t.hrs<state.target-1?`<span class="small">Fewer hours than your target: nothing else you're eligible for is offered and fits your week.</span>`:""}
+      ${t.dropped.length?`<span class="small">Left out ${t.dropped.map(esc).join(", ")}: it couldn't fit alongside the others without a time clash.</span>`:""}
+      ${t.nodata.length?`<span class="skip">Can't plan yet because the subject isn't downloaded: ${t.nodata.slice(0,8).map(esc).join(", ")}${t.nodata.length>8?" and "+(t.nodata.length-8)+" more":""}.</span>`:""}
+      ${t.skipped.length?`<div class="skip">Skipped: <ul>${t.skipped.map(s=>`<li>${esc(s.c)}: ${esc(s.t)}</li>`).join("")}</ul></div>`:""}</div>`;
+    }
+    const summer=t.season==="summer";
+    return`<div class="build" style="background:var(--surface)"><b>${head}</b>
+      ${t.picks.length?list(t):`<span class="small">Nothing left that you'd be eligible for by then.</span>`}
+      <span class="small">Assumes you pass the semesters before it. ${summer?"Summer sessions are shorter and KSU offers fewer courses, mostly gen-eds and lower-level classes, so this leans that way. ":""}${esc(t.name)} sections aren't published yet, so this is a course plan, not a timed schedule, and some courses may not be offered. Once KSU posts them, this semester can be switched to real schedules.</span></div>`;
+  }).join("");
+  box.innerHTML=cards+`<span class="small">${b.terms.length} semesters · ${total} credit hours planned. You can change ${esc(D.termName)} with Add / Taking below; the plan updates when you click the button again.</span>`;
+}
+function renderCredits(){
+  const hrs=[...state.selected].reduce((a,c)=>a+crOne(c)+(D.titles[c+"L"]&&!state.selected.has(c+"L")?crOne(c+"L"):0),0);
+  $("credits").innerHTML=`This term: <b>${state.selected.size}</b> course${state.selected.size===1?"":"s"} · <b>${hrs}</b> credit hours${hrs>18?' · <span style="color:var(--warn)">over 18 needs approval</span>':hrs&&hrs<12?' · <span style="color:var(--warn)">under 12 is part-time</span>':""}`;
+  const listed=new Set(major().groups.flatMap(g=>g.items.flatMap(it=>it.c?[it.c]:it.opts)));
+  const extras=[...state.selected].filter(c=>!listed.has(c));
+  $("extraChips").innerHTML=extras.map(c=>`<span class="chip"><b>${esc(c)}</b>${esc(title(c))}<button data-c="${esc(c)}" aria-label="Remove ${esc(c)}">×</button></span>`).join("");
+  $("extraChips").querySelectorAll("button").forEach(b=>b.onclick=()=>{state.selected.delete(b.dataset.c);update()});
+}
+function renderCourses(){renderReqs();renderBuild();renderCredits()}
+function addCourse(){
+  const v=$("courseSearch").value.trim().toUpperCase();
+  const code=Object.keys(D.titles).find(c=>v.startsWith(c.toUpperCase()+" —")||v===c.toUpperCase()||v.replace(/\s+/g,"")===c.replace(/\s+/g,""));
+  if(!code){$("courseStatus").textContent="That course isn't offered in "+D.termName+" in the subjects downloaded. Pick one from the list.";return}
+  if(isDone(code)){$("courseStatus").textContent=code+" is marked Done.";return}
+  state.selected.add(code);$("courseSearch").value="";
+  const u=unmet(code,state.selected);
+  $("courseStatus").textContent=u.length?`Added ${code}. Heads up: it needs ${u.join(", ")}.`:`Added ${code}.`;
+  update();
+}
+$("courseAdd").onclick=addCourse;
+$("courseSearch").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addCourse()}});
+$("major").onchange=e=>{state.major=e.target.value;openGroups=null;buildTerm();update()};
+$("target").onchange=e=>{state.target=+e.target.value;persist()};
+$("pSummer").onchange=e=>{state.summer=e.target.checked;$("summerTarget").disabled=!state.summer;buildTerm();update()};
+$("summerTarget").onchange=e=>{state.summerTarget=+e.target.value;if(state.summer){buildTerm();update()}else persist()};
+$("buildBtn").onclick=()=>{buildTerm();update()};
+
+/* ---------- availability ---------- */
+let painting=null;
+function renderAvail(){
+  const g=$("avail");g.innerHTML='<div></div>'+DAYS.map(d=>`<div class="hd">${DAYNAME[d]}</div>`).join("");
+  for(let h=H0;h<H1;h++){
+    g.insertAdjacentHTML("beforeend",`<div class="hr">${fmt(h*60)}</div>`);
+    for(const d of DAYS){
+      const b=document.createElement("button");b.className="cell"+(state.busy.has(d+h)?" busy":"");
+      b.dataset.k=d+h;b.setAttribute("aria-label",`${DAYNAME[d]} ${fmt(h*60)}`);b.setAttribute("aria-pressed",state.busy.has(d+h));
+      g.append(b);
+    }
+  }
+}
+function paint(el){const k=el.dataset.k;if(!k)return;painting?state.busy.add(k):state.busy.delete(k);el.classList.toggle("busy",painting);el.setAttribute("aria-pressed",painting)}
+const g=$("avail");
+g.addEventListener("pointerdown",e=>{const el=e.target.closest(".cell");if(!el)return;e.preventDefault();painting=!state.busy.has(el.dataset.k);paint(el)});
+g.addEventListener("pointermove",e=>{if(painting===null)return;const el=document.elementFromPoint(e.clientX,e.clientY)?.closest?.(".cell");if(el&&g.contains(el))paint(el)});
+window.addEventListener("pointerup",()=>{if(painting!==null){painting=null;solveAndRender()}});
+g.addEventListener("keydown",e=>{const el=e.target.closest(".cell");if(el&&(e.key===" "||e.key==="Enter")){e.preventDefault();painting=!state.busy.has(el.dataset.k);paint(el);painting=null;solveAndRender()}});
+$("clearBusy").onclick=()=>{state.busy.clear();renderAvail();solveAndRender()};
+
+/* ---------- preferences ---------- */
+function syncPrefs(){const p=state.prefs;$("pEarly").checked=p.noEarly;$("pLate").checked=p.noLate;$("pCompact").checked=p.compact;$("pFull").checked=p.full;$("pFormat").value=p.format;$("pCampus").value=p.campus}
+[["pEarly","noEarly"],["pLate","noLate"],["pCompact","compact"],["pFull","full"]].forEach(([id,k])=>$(id).onchange=e=>{state.prefs[k]=e.target.checked;solveAndRender()});
+$("pFormat").onchange=e=>{state.prefs.format=e.target.value;solveAndRender()};
+$("pCampus").onchange=e=>{state.prefs.campus=e.target.value;solveAndRender()};
+function renderProfList(){
+  const ents=Object.entries(state.prof);
+  $("profList").innerHTML=ents.length?`<span class="small">Professors you've marked:</span>`+ents.map(([n,v])=>`<span class="row"><span class="chip"><b style="color:var(${v==="prefer"?"--good":"--bad"})">${v==="prefer"?"Prefer":"Avoid"}</b>${esc(n)}<button data-n="${esc(n)}" aria-label="Clear ${esc(n)}">×</button></span></span>`).join(""):`<span class="small">Mark professors Prefer or Avoid from the schedule table to steer results.</span>`;
+  $("profList").querySelectorAll("button").forEach(b=>b.onclick=()=>{delete state.prof[b.dataset.n];solveAndRender()});
+}
+const rmp=n=>{const[last,first]=n.split(",").map(x=>x.trim());return"https://www.ratemyprofessors.com/search/professors?q="+encodeURIComponent(first?first+" "+last:n)};
+
+/* ---------- results ---------- */
+const colorOf={};
+function why(r){
+  const w=[];
+  w.push(r.days.length?`On campus ${r.days.length} day${r.days.length===1?"":"s"} (${DAYS.filter(d=>r.days.includes(d)).map(d=>DAYNAME[d]).join(", ")}).`:"No campus days: everything is online.");
+  if(r.maxGap.m>=60)w.push(`Longest break: ${Math.floor(r.maxGap.m/60)}h ${r.maxGap.m%60?r.maxGap.m%60+"m ":""}on ${DAYNAME[r.maxGap.d]}.`);else if(r.days.length)w.push("No breaks longer than an hour between classes.");
+  if(r.switches.length)w.push(`Switches between Kennesaw and Marietta on ${r.switches.map(d=>DAYNAME[d]).join(", ")}; at least ${E.TRAVEL} minutes are left for the shuttle or drive.`);
+  if(r.online)w.push(`${r.online} online section${r.online>1?"s":""}.`);
+  if(r.early)w.push(`${r.early} class meeting${r.early>1?"s":""} before 9 a.m. each week.`);
+  if(r.prefer)w.push(`${r.prefer} section${r.prefer>1?"s":""} with professors you marked Prefer.`);
+  const half=r.secs.filter(s=>s.meets.some(E.isHalf));if(half.length)w.push(`${half.map(s=>s.course).join(", ")} meets for only part of the term (see dates in the table).`);
+  const full=r.secs.filter(s=>s.seats<=0);if(full.length)w.push(`${full.map(s=>s.course).join(", ")} is full right now; you'd join the waitlist.`);
+  return w;
+}
+function blockedMsg(b){
+  const parts=[];
+  if(b.full)parts.push(`${b.full} full`);if(b.busy)parts.push(`${b.busy} during your busy hours`);if(b.format)parts.push(`${b.format} in the wrong format`);
+  if(b.campus)parts.push(`${b.campus} on the other campus`);if(b.avoid)parts.push(`${b.avoid} with professors you avoid`);
+  return `<li><b>${esc(b.c)}</b>: all ${b.total} sections are ruled out (${parts.join(", ")}).</li>`;
+}
+function renderResults(){
+  const box=$("results"),out=state.out,R=out.results;
+  out.courses.forEach((c,i)=>colorOf[c]=`var(--c${i%6+1})`);
+  const adv=$("advisorPanel");
+  if(!state.selected.size){box.innerHTML=`<h2>Schedules</h2><div class="empty"><b>No courses selected.</b><span>Choose Add next to a pathway course, or add any other course offered this term.</span></div>`;adv.hidden=true;return}
+  if(out.blocked.length){box.innerHTML=`<h2>Schedules</h2><div class="empty"><b>No schedule fits yet.</b><ul>${out.blocked.map(blockedMsg).join("")}</ul><span>Free up some hours, include full sections, loosen the format or campus setting, or remove the course.</span></div>`;adv.hidden=true;return}
+  if(!R.length){box.innerHTML=`<h2>Schedules</h2><div class="empty"><b>No conflict-free combination.</b><span>Each course has sections that fit your week, but they overlap with each other. Try freeing more hours or dropping one course.</span></div>`;adv.hidden=true;return}
+  adv.hidden=false;
+  const r=R[Math.min(state.active,R.length-1)];
+  const tabs=R.map((x,i)=>`<button class="tab" role="tab" aria-selected="${i===state.active}" data-i="${i}"><b>Option ${"ABCDE"[i]}</b><span>score ${x.score} · ${x.days.length} day${x.days.length===1?"":"s"}</span></button>`).join("");
+  const pills=[`<span class="pill ${r.days.length<=3?"good":""}">${r.days.length} days on campus</span>`,
+    `<span class="pill ${r.gap/60>3?"warn":""}">${(r.gap/60).toFixed(1)} h of gaps / week</span>`,
+    r.switches.length?`<span class="pill warn">Campus switch</span>`:"",r.full?`<span class="pill warn">${r.full} waitlisted</span>`:"",
+    r.prefer?`<span class="pill good">${r.prefer} preferred professor${r.prefer>1?"s":""}</span>`:""].join("");
+  const PX=0.8,top=H0*60,hgt=(H1*60-top)*PX;
+  let cal=`<div class="cal" style="grid-template-rows:auto ${hgt}px"><div></div>${DAYS.map(d=>`<div class="dh">${DAYNAME[d]}</div>`).join("")}`;
+  cal+=`<div class="tcol">${Array.from({length:H1-H0},(_,i)=>`<div style="top:${i*60*PX}px">${fmt((H0+i)*60)}</div>`).join("")}</div>`;
+  for(const d of DAYS){
+    cal+=`<div class="day" style="background-size:100% ${60*PX}px">`;
+    for(let h=H0;h<H1;h++)if(state.busy.has(d+h))cal+=`<div class="bz" style="top:${(h*60-top)*PX}px;height:${60*PX}px"></div>`;
+    for(const s of r.secs)for(const m of s.meets)if(m.days.includes(d)){
+      const type=m.type&&m.type!=="Lecture"?" "+m.type:"";
+      cal+=`<div class="blk${E.isHalf(m)?" half":""}" style="--cc:${colorOf[s.course]};top:${(m.s-top)*PX}px;height:${Math.max(18,(m.e-m.s)*PX)}px" title="${esc(s.course+type+" "+fmt(m.s)+"–"+fmt(m.e)+" "+(m.where||""))}"><b>${esc(s.course)}${esc(type)}</b><span>${fmt(m.s)}–${fmt(m.e)}${E.isHalf(m)?" · "+md(m.d0)+"–"+md(m.d1):""}</span><span>${esc(m.where||CAMPUS[s.campus])}</span></div>`;
+    }
+    cal+=`</div>`;
+  }
+  cal+=`</div>`;
+  const onl=r.secs.filter(s=>!s.meets.length);
+  const rows=r.secs.slice().sort((a,b)=>a.course.localeCompare(b.course)).map(s=>{
+    const profs=s.profs.map(n=>n==="Staff"?`<span class="small">Staff (not yet assigned)</span>`:
+      `<span><a href="${rmp(n)}" target="_blank" rel="noopener">${esc(n)}</a><span class="row"><button class="tog pref" data-p="${esc(n)}" data-v="prefer" aria-pressed="${state.prof[n]==="prefer"}">Prefer</button><button class="tog avoid" data-p="${esc(n)}" data-v="avoid" aria-pressed="${state.prof[n]==="avoid"}">Avoid</button></span></span>`).join("");
+    const meets=s.meets.length?s.meets.map(m=>`<span class="m">${m.days.join("")} ${fmt(m.s)}–${fmt(m.e)}${m.type&&m.type!=="Lecture"?` <i>${esc(m.type)}</i>`:""}${m.where?` <i>· ${esc(m.where)}</i>`:""}${E.isHalf(m)?` <i>· ${md(m.d0)}–${md(m.d1)}</i>`:""}</span>`).join(""):`<span class="m">No set meeting time</span>`;
+    const alts=s.alts&&s.alts.length?`<span class="small">Same time: CRN ${s.alts.map(a=>a.crn).join(", ")}</span>`:"";
+    return`<tr style="--cc:${colorOf[s.course]}"><td class="mono">${s.crn}${alts?"<br>"+alts:""}</td><td><span class="sw"></span>${esc(s.course)}<span class="small"> · sec ${esc(s.sec)}</span><br><span class="small">${esc(title(s.course))}</span></td><td><div class="prof">${profs}</div></td><td>${meets}</td><td>${CAMPUS[s.campus]}<br><span class="small">${esc(s.method)} · </span><span class="small ${s.seats<=0?"seats0":""}">${s.seats>0?s.seats+" of "+s.cap+" seats":"Full · "+s.wait+" waitlist spots"}</span></td></tr>`}).join("");
+  const crns=r.secs.map(s=>s.crn).join(", ");
+  // backups: same-time sections first, then other sections that still fit your week and the rest of this schedule
+  const st={busy:state.busy,prefs:state.prefs,prof:state.prof};
+  const backs=r.secs.slice().sort((a,b)=>a.course.localeCompare(b.course)).map(s=>{
+    const others=r.secs.filter(o=>o!==s),same=(s.alts||[]).map(a=>({crn:a.crn,seats:a.seats,same:true}));
+    const taken=new Set([s.crn,...same.map(a=>a.crn)]);
+    const diff=(E.byCourse[s.course]||[]).filter(x=>!taken.has(x.crn)&&x.seats>0&&!E.passes(x,{...st,prefs:{...st.prefs,full:false}})&&!others.some(o=>E.conflict(o,x)))
+      .sort((a,b)=>b.seats-a.seats).slice(0,Math.max(0,3-same.length)).map(x=>({crn:x.crn,seats:x.seats,when:x.meets.length?x.meets.map(m=>m.days.join("")+" "+fmt(m.s)).join(", "):"online",prof:x.profs[0]}));
+    return{s,list:[...same.filter(a=>a.seats>0),...diff].slice(0,3)};
+  });
+  const regText=`${D.termName} registration\nMain CRNs: ${crns}\n`+backs.map(b=>`${b.s.course} ${b.s.crn}${b.list.length?" · backups: "+b.list.map(x=>x.crn).join(", "):" · no backup fits"}`).join("\n");
+  box.innerHTML=`<h2>Schedules <small>${out.found.toLocaleString()} valid combination${out.found===1?"":"s"}${out.truncated?" (search stopped early; best shown)":""} · top ${R.length} distinct shown</small></h2>
+   <div class="tabs" role="tablist">${tabs}</div>
+   <div class="summary">${pills}</div>
+   <div class="calwrap">${cal}</div>
+   ${onl.length?`<p class="online">Online, no set time: ${onl.map(s=>esc(s.course)).join(", ")}</p>`:""}
+   <ul class="why">${why(r).map(w=>`<li>${esc(w)}</li>`).join("")}</ul>
+   <div class="tablewrap"><table><thead><tr><th>CRN</th><th>Course</th><th>Professor</th><th>Meets</th><th>Campus &amp; seats</th></tr></thead><tbody>${rows}</tbody></table></div>
+   <div class="reg">
+     <h3>Registration day · Option ${"ABCDE"[state.active]}</h3>
+     <ol class="steps">
+       <li>Find your time ticket: Owl Express → Registration → Prepare for Registration. Registration opens at 8:00 a.m. on your ticket date.</li>
+       <li>Seat counts here refresh automatically about once a day (last update: ${esc(D.fetched)}), so check seats in Owl Express too.</li>
+       <li>When your window opens: Register for Classes → pick ${esc(D.termName)} → Enter CRNs. Paste the main CRNs below and submit.</li>
+       <li>If a section is full or closed, swap in a backup from the table. Backups are chosen so they still fit your week and the rest of this schedule.</li>
+     </ol>
+     <label class="f" for="crnBox">Main CRNs
+       <span class="crns"><input id="crnBox" readonly value="${crns}"><button class="btn ghost" id="copyCrn">Copy</button></span></label>
+     <div class="tablewrap"><table class="bk"><thead><tr><th>Course</th><th>Main CRN</th><th>Backups if it's full</th></tr></thead><tbody>
+       ${backs.map(b=>`<tr><td>${esc(b.s.course)}</td><td class="mono">${b.s.crn}${b.s.seats<=0?' <span class="seats0">full</span>':""}</td><td>${b.list.length?b.list.map(x=>`<span class="m"><span class="mono">${x.crn}</span> <i>· ${x.same?"same time":esc(x.when)} · ${x.seats} seats${x.prof&&!x.same?" · "+esc(x.prof):""}</i></span>`).join(""):`<span class="small">No other open section fits around this schedule.</span>`}</td></tr>`).join("")}
+     </tbody></table></div>
+     <div class="row"><button class="btn ghost" id="copyReg">Copy CRNs and backups</button><span class="status" id="regStatus"></span></div>
+   </div>
+   <div class="engine"><span>Labs added automatically</span><span>Kennesaw↔Marietta buffer ${E.TRAVEL} min</span><span>Seat counts as of ${esc(D.fetched)}</span></div>`;
+  box.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{state.active=+t.dataset.i;renderResults()});
+  box.querySelectorAll(".tog[data-p]").forEach(b=>b.onclick=()=>{const n=b.dataset.p,v=b.dataset.v;state.prof[n]===v?delete state.prof[n]:state.prof[n]=v;solveAndRender(true)});
+  $("copyReg").onclick=async()=>{try{await navigator.clipboard.writeText(regText);$("regStatus").textContent="Copied. Paste it into your notes for registration day."}catch{$("regStatus").textContent="Copy didn't work here. Select the CRNs above instead."}};
+  $("copyCrn").onclick=async()=>{const b=$("copyCrn");try{await navigator.clipboard.writeText(crns);b.textContent="Copied"}catch{$("crnBox").select();b.textContent="Selected"}setTimeout(()=>b.textContent="Copy",1500)};
+}
+function solveAndRender(keepTab){
+  state.out=E.solve({courses:[...state.selected],busy:state.busy,prefs:state.prefs,prof:state.prof});
+  if(!keepTab)state.active=0;
+  renderResults();renderProfList();persist();
+}
+function update(){renderCourses();solveAndRender()}
+
+/* ---------- AI layer ---------- */
+let sample=null;
+const aiErr=c=>({rate_limited:"Too many AI requests right now. Try again later.",invalid_json:"The reply didn't come back in a usable shape. Try rephrasing.",sampling_disabled:"AI features are turned off on this server."}[c]||"Something went wrong reaching the AI. Try again.");
+function hideAI(){$("aiPanel").hidden=true;$("advGo").hidden=true;$("advStatus").textContent="AI features are turned off on this server."}
+$("aiGo").onclick=async()=>{
+  const text=$("aiText").value.trim();if(!text){$("aiStatus").textContent="Type a sentence or two about your week first.";return}
+  if(!sample)return;
+  $("aiGo").disabled=true;$("aiStatus").textContent="Reading your description…";
+  const catalog=Object.keys(D.titles).filter(c=>!c.endsWith("L")).map(c=>`${c}: ${title(c)}`).join("; ");
+  const prompt=`You turn a Kennesaw State University student's plain-English description into settings for a schedule planner.
+Courses offered in ${D.termName} (code: title): ${catalog}
+Days use letters M T W R F (R = Thursday). Busy time is in whole hours from 8 to 22 (24h clock).
+Majors the planner knows: ${Object.entries(MAJORS).map(([k,m])=>k+" = "+m.name).join("; ")}.
+Current planner state: ${JSON.stringify({major:state.major,creditTarget:state.target,completed:[...state.completed],planned:[...state.selected],busyHours:[...state.busy].sort(),prefs:state.prefs})}
+Student says: """${text.slice(0,2000)}"""
+Reply with only JSON in this shape:
+{"major":"cs"|"swe"|"it"|"arch"|null, "creditTarget":12-18 or null, "buildTerm":true|false, "replaceBusy": true|false, "busy":[{"days":"TR","start":8,"end":12}], "completed":["CODE"] or null, "courses":["CODE"] or null, "prefs":{"noEarly":bool|null,"noLate":bool|null,"compact":bool|null,"full":bool|null,"format":"any"|"prefer-in"|"prefer-online"|"in"|"online"|null,"campus":"any"|"K"|"M"|null}, "reply":"one or two sentences telling the student what you set"}
+Rules: set replaceBusy true only if the student describes their whole week's commitments. Use null for anything not mentioned. "completed" lists every course they say they've passed, using standard KSU codes. Set buildTerm true when they want the planner to choose their courses (for example "what should I take next?") and leave "courses" null; otherwise "courses" lists courses they name to take this term, only codes from the list above; labs are added automatically, so leave them out. A day the student can't attend at all becomes busy 8 to 22. campus K = Kennesaw, M = Marietta.`;
+  try{
+    const j=await sample.json(prompt,{modelTier:"quick"});
+    if(j.replaceBusy)state.busy.clear();
+    for(const b of j.busy||[]){const s=Math.max(H0,Math.floor(+b.start)),e=Math.min(H1,Math.ceil(+b.end));
+      for(const d of String(b.days||"").toUpperCase())if(DAYS.includes(d))for(let h=s;h<e;h++)state.busy.add(d+h)}
+    if(Array.isArray(j.completed))state.completed=new Set(j.completed.map(String));
+    if(MAJORS[j.major]){state.major=j.major;openGroups=null}
+    if(Number.isInteger(j.creditTarget)&&j.creditTarget>=12&&j.creditTarget<=18)state.target=j.creditTarget;
+    if(Array.isArray(j.courses))state.selected=new Set(j.courses.map(String).filter(c=>D.titles[c]&&!state.completed.has(c)));
+    const p=j.prefs||{};
+    for(const k of ["noEarly","noLate","compact","full"])if(typeof p[k]==="boolean")state.prefs[k]=p[k];
+    if(["any","prefer-in","prefer-online","in","online"].includes(p.format))state.prefs.format=p.format;
+    if(["any","K","M"].includes(p.campus))state.prefs.campus=p.campus;
+    if(j.buildTerm||(MAJORS[j.major]&&!Array.isArray(j.courses)))buildTerm();
+    syncPrefs();renderAvail();update();
+    $("aiStatus").textContent=String(j.reply||"Updated the form.");
+  }catch(e){
+    $("aiStatus").textContent=aiErr(e&&e.code);
+    if(e&&(e.code==="not_granted"||e.code==="sampling_disabled"))hideAI();
+  }finally{$("aiGo").disabled=false}
+};
+let advCtl=null;
+$("advStop").onclick=()=>advCtl?.abort();
+$("advGo").onclick=async()=>{
+  const R=state.out&&state.out.results;if(!sample||!R||!R.length)return;
+  advCtl=new AbortController();$("advGo").disabled=true;$("advStop").hidden=false;$("advStatus").textContent="Thinking…";$("advOut").textContent="";
+  const opts=R.map((r,i)=>`Option ${"ABCDE"[i]} (score ${r.score}): `+r.secs.map(s=>`${s.course} (${title(s.course)}) with ${s.profs.join(" & ")}, ${s.meets.length?s.meets.map(m=>m.days.join("")+" "+fmt(m.s)+"-"+fmt(m.e)+(m.type&&m.type!=="Lecture"?" "+m.type:"")+(E.isHalf(m)?" ("+md(m.d0)+"-"+md(m.d1)+" only)":"")).join(" + "):"online, no set time"}, ${CAMPUS[s.campus]}, ${s.method}, ${s.seats>0?s.seats+" seats left":"FULL (waitlist)"}`).join("; ")+`. Facts: ${why(r).join(" ")}`).join("\n");
+  const prompt=`You are a friendly academic advisor at Kennesaw State University. A ${major().name} student built these ${D.termName} schedule options from real KSU class sections. They have ${progress(major()).have} of ${progress(major()).need} major-sheet requirements done. Their preferences: ${JSON.stringify(state.prefs)}. Busy hours: ${[...state.busy].sort().join(" ")||"none"}. Professors they marked: ${JSON.stringify(state.prof)}.
+${opts}
+Write a short comparison (under 180 words, plain text, no markdown headers): which option you'd pick for this student and why, the main tradeoff against the runner-up, and one practical tip (for example about the Kennesaw–Marietta shuttle, a long gap, an early class, a section with few seats left, or a waitlist). You have no professor ratings; don't describe any professor's teaching. Suggest checking Rate My Professors if instructors matter to them.`;
+  try{
+    await sample(prompt,{signal:advCtl.signal,onText:({text})=>{$("advOut").textContent=text;$("advStatus").textContent=""}});
+    $("advStatus").textContent="";
+  }catch(e){
+    if(e&&e.text)$("advOut").textContent=e.text;
+    $("advStatus").textContent=e?.code==="cancelled"?"Stopped.":aiErr(e&&e.code);
+    if(e&&(e.code==="not_granted"||e.code==="sampling_disabled"))hideAI();
+  }finally{$("advGo").disabled=false;$("advStop").hidden=true}
+};
+
+/* ---------- boot ---------- */
+if(!state.built)buildTerm();
+syncPrefs();renderAvail();update();
+$("aiGo").disabled=true;$("advGo").disabled=true;$("aiStatus").textContent="Connecting…";
+(async()=>{
+  try{const r=await fetch("/api/ai/status");sample=(await r.json()).enabled?serverAI():null}catch{sample=null}
+  if(sample){$("aiGo").disabled=false;$("advGo").disabled=false;$("aiStatus").textContent=""}
+  else{$("aiStatus").textContent="";hideAI()}
+})();
+}
+
+// AI calls go to this site's server, which holds the API key.
+function serverAI(){
+  async function call(kind,prompt,opts={}){
+    let r;
+    try{r=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({kind,prompt}),signal:opts.signal})}
+    catch(e){throw{code:e.name==="AbortError"?"cancelled":"upstream_error"}}
+    if(!r.ok){let j={};try{j=await r.json()}catch{}throw{code:j.code||"upstream_error",text:j.text}}
+    if(kind==="json")return r.json();
+    const rd=r.body.getReader(),dec=new TextDecoder();let text="";
+    try{for(;;){const{done,value}=await rd.read();if(done)break;const delta=dec.decode(value,{stream:true});if(delta){text+=delta;opts.onText&&opts.onText({text,delta})}}}
+    catch(e){throw{code:e.name==="AbortError"?"cancelled":"upstream_error",text}}
+    if(!text.trim())throw{code:"empty_completion"};
+    return{text,truncated:false};
+  }
+  const f=(prompt,opts)=>call("text",prompt,opts);
+  f.json=(prompt,opts)=>call("json",prompt,opts);
+  return f;
+}
+
+// Load class data from the server (the offline copy is used when there's no connection).
+(async function boot(){
+  const msg=document.getElementById("loadingMsg");
+  try{
+    const r=await fetch("/api/data");
+    if(!r.ok){let j={};try{j=await r.json()}catch{}throw new Error(j.error||"The server didn't send class data.")}
+    const D=await r.json();
+    document.getElementById("loading").hidden=true;document.getElementById("app").hidden=false;
+    startPlanner(D);
+  }catch(e){msg.textContent=(e&&e.message&&!/fetch/i.test(e.message)?e.message:"Couldn't reach the planner's server. Check your connection and reload.")}
+})();
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
+</script>
+</body>
+</html>
