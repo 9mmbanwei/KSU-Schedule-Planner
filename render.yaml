@@ -1,0 +1,18 @@
+# Render reads this file to set up the site (Dashboard → New → Blueprint → pick this repo).
+services:
+  - type: web
+    name: ksu-planner
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # one worker so only one background refresh talks to KSU
+    startCommand: gunicorn app.main:app --workers 1 --threads 8 --timeout 180 --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: KSU_TERM
+        value: "202701"
+      - key: REFRESH_HOURS
+        value: "24"
+      - key: ANTHROPIC_API_KEY
+        sync: false
