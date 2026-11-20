@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Plan your Kennesaw State classes: pick courses from your major's requirements and build conflict-free schedules from real KSU sections.">
+<meta name="theme-color" content="#EAA712">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="KSU Planner">
+<title>KSU Schedule Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/css/planner.css">
+</head>
+<body>
+<div class="loading" id="loading"><b>KSU Schedule Planner</b><span id="loadingMsg">Loading class data…</span></div>
+<div class="wrap" id="app" hidden>
+  <header class="top">
+    <div>
+      <h1>KSU Schedule <span>Planner</span></h1>
+      <p class="sub">Choose your major and mark what you've finished. The planner picks your next term's courses from your requirements, then builds conflict-free schedules from real KSU sections around the hours you're free.</p>
+    </div>
+    <div class="hdr-right">
+      <div class="seg" role="radiogroup" aria-label="Theme">
+        <button type="button" role="radio" data-theme-pick="system" aria-checked="true">System</button>
+        <button type="button" role="radio" data-theme-pick="light" aria-checked="false">Light</button>
+        <button type="button" role="radio" data-theme-pick="dark" aria-checked="false">Dark</button>
+      </div>
+      <div class="badge" id="dataBadge"></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <section class="panel ai" id="aiPanel">
+        <h2>Describe your week <small>AI fills in the form</small></h2>
+        <textarea id="aiText" placeholder="e.g. I'm a software engineering major, I've finished CSE 1321, ENGL 1101 and Calc I. I work Tue/Thu mornings and want 15 hours. What should I take?"></textarea>
+        <div class="row">
+          <button class="btn" id="aiGo">Set up from this</button>
+          <span class="status" id="aiStatus"></span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Your major</h2>
+        <label class="f" for="major">Major
+          <select id="major"></select></label>
+        <p class="small" id="majorSource" style="margin:0"></p>
+        <div class="row" style="align-items:flex-end">
+          <label class="f" for="target">Credit hours per semester
+            <select id="target"><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option></select></label>
+          <button class="btn" id="buildBtn">Plan my next year</button>
+        </div>
+        <div class="row" style="align-items:center">
+          <label class="chk" for="pSummer"><input type="checkbox" id="pSummer"> Include a summer semester</label>
+          <label class="f" for="summerTarget" style="flex-direction:row;align-items:center;gap:6px">Summer hours
+            <select id="summerTarget"><option>3</option><option>4</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>12</option></select></label>
+        </div>
+        <div id="buildOut"></div>
+        <div class="credits" id="credits"></div>
+        <div class="extra">
+          <label class="f" for="courseSearch">Add any other course offered this term
+            <span class="row"><input type="text" id="courseSearch" list="courseList" placeholder="Type a code or title, e.g. MATH 2202"><button class="btn ghost" id="courseAdd">Add</button></span>
+          </label>
+          <datalist id="courseList"></datalist>
+          <div class="chips" id="extraChips"></div>
+          <span class="status" id="courseStatus"></span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Requirements <small id="reqProgress"></small></h2>
+        <div id="dataGap"></div>
+        <div id="reqs"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Availability <small>tap or drag to block hours</small></h2>
+        <div class="legend"><span><i style="background:color-mix(in srgb,var(--good) 16%,var(--surface))"></i>Free</span><span><i style="background:var(--busy)"></i>Busy (work, commute, etc.)</span></div>
+        <div class="avail" id="avail"></div>
+        <div class="row"><button class="btn ghost" id="clearBusy">Clear all</button></div>
+      </section>
+
+      <section class="panel">
+        <h2>Preferences</h2>
+        <div class="prefs">
+          <div class="two">
+            <label class="f" for="pFormat">Format
+              <select id="pFormat">
+                <option value="any">Any</option><option value="prefer-in">Prefer in person</option><option value="prefer-online">Prefer online</option>
+                <option value="in">In person only</option><option value="online">Online only</option>
+              </select></label>
+            <label class="f" for="pCampus">Campus
+              <select id="pCampus"><option value="any">Either campus</option><option value="K">Kennesaw only</option><option value="M">Marietta only</option></select></label>
+          </div>
+          <label class="chk"><input type="checkbox" id="pEarly"> No classes starting before 9:00 a.m.</label>
+          <label class="chk"><input type="checkbox" id="pLate"> No classes ending after 6:00 p.m.</label>
+          <label class="chk"><input type="checkbox" id="pCompact"> Fewer days on campus, even with longer days</label>
+          <label class="chk"><input type="checkbox" id="pFull"> Include full sections (waitlist)</label>
+          <div class="plist" id="profList"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel" id="results"></section>
+      <section class="panel" id="advisorPanel">
+        <h2>Advisor notes <small>AI comparison of the top options</small></h2>
+        <div class="row">
+          <button class="btn" id="advGo">Compare these options</button>
+          <button class="btn ghost" id="advStop" hidden>Stop</button>
+          <span class="status" id="advStatus"></span>
+        </div>
+        <div class="advice" id="advOut"></div>
+      </section>
+      <p class="note"><b>About the data.</b> Sections, times, rooms, instructors and seat counts come from KSU's class search at the time shown above, and seats change constantly during registration. Major requirements come from KSU's 2025–26 curriculum sheets (Computer Science, Software Engineering, Information Technology) and the 2025 Architecture curriculum chart, entered by hand: prerequisites are simplified, rules like "at least one course from List 1" aren't enforced, and the official catalog and DegreeWorks always win. Mark courses Done to match your DegreeWorks audit. Professor names link to a Rate My Professors search; use Prefer and Avoid to steer the schedules. This is an unofficial student tool, not affiliated with Kennesaw State University. Always confirm in Owl Express before you register.</p>
+    </div>
+  </div>
+</div>
+
+<script src="/js/theme.js"></script>
+<script src="/js/engine.js"></script>
+<script src="/js/requirements.js"></script>
+<script src="/js/planner.js"></script>
+</body>
+</html>
